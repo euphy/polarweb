@@ -34,7 +34,7 @@ def get_page(machine_name):
     return jsonify({'name': app.machines[machine_name].current_page['name']})
 
 
-@app.route('/api/m/<machine_name>/layout/<layout_name>', methods=['POST'])
+@app.route('/api/m/<machine_name>/page/<page_name>', methods=['POST'])
 def set_page(machine_name, page_name):
     return jsonify(app.machines[machine_name].set_page(page_name=page_name))
 
@@ -49,15 +49,20 @@ def get_layout(machine_name):
 def set_layout(machine_name, layout_name):
     return jsonify(app.machines[machine_name].set_layout(layout_name=layout_name))
 
+
+# Control whether machine is actually drawing or not
 @app.route('/api/m/<machine_name>/drawing/<state_to_set>', methods=['POST'])
 def control_drawing(machine_name, state_to_set):
     result = app.machines[machine_name].control_drawing(state_to_set)
     return result
 
+
+# Control whether machine will acquire a new image immediately
 @app.route('/api/m/<machine_name>/acquire/<state_to_set>', methods=['POST'])
 def control_acquire(machine_name, state_to_set):
     result = app.machines[machine_name].control_acquire(state_to_set)
     return result
+
 
 if __name__ == '__main__':
     app.run()

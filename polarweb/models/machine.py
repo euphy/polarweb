@@ -82,10 +82,27 @@ class Polargraph():
                               Vector2(self.current_page.size.x/2, 0))]
 
     def control_acquire(self, command):
-        if command == 'start':
+        if command == 'go':
             self.acquiring = True
-        if command == 'pause':
+        elif command == 'stop':
             self.acquiring = False
+
+        return self.state()
+
+    def control_drawing(self, command):
+        if command == 'go':
+            pass
+        elif command == 'stop':
+            pass
+        elif command == 'cancel_panel':
+            pass
+        elif command == 'cancel_page':
+            pass
+        elif command == 'retry_panel':
+            pass
+
+        return self.state()
+
 
 class CommandQueue():
 
