@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Polarweb</title>
+{% assets "css_all" %}
+    <link href="{{ ASSET_URL }}">
+{% endassets %}
+</head>
+<body>
+    {% block content %}
+    <h1>Polarweb.</h1>
+    <h2>Hi.</h2>
+    <ul>
+        <li>{{machines}}</li>
+        <li>{{machines['left']}}</li>
+        <li>{{machines['right']}}</li>
+    </ul>
+    {% endblock %}
+{% assets "js_all" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
+</body>
+</html>
