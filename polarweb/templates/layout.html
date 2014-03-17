@@ -2,20 +2,35 @@
 <html>
 <head>
     <title>Polarweb</title>
-{% assets "css_all" %}
-    <link href="{{ ASSET_URL }}">
+{% assets "bootstrap" %}
+    <link href="{{ ASSET_URL }}" rel="stylesheet">
 {% endassets %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    {% block content %}
-    <h1>Polarweb.</h1>
-    <h2>Hi.</h2>
-    <ul>
-        <li>{{machines}}</li>
-        <li>{{machines['left']}}</li>
-        <li>{{machines['right']}}</li>
-    </ul>
-    {% endblock %}
+    <div class="row">
+    {% for machine_name in machines['machine_names'] %}
+        <div class="col-sm-6">
+            <h1>{{ machine_name }}</h1>
+            <p>{{machines[machine_name].state()}}</p>
+            <h2>Drawing:</h2>
+            <p>
+            {% if machines[machine_name].drawing %}
+                <button type="button" class="btn btn-primary">Pause</button><br>
+            {% else %}
+                <button type="button" class="btn btn-primary">Run</button><br>
+            {% endif %}
+            </p>
+            <h2>Acquire: {{ machines[machine_name]</h2>
+            <p>
+                <button type="button" class="btn btn-primary">Automatic</button><br>
+                <button type="button" class="btn btn-primary" disabled="disabled">Manual</button>
+                <button type="button" class="btn btn-primary" disabled="disabled">Now</button>
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+
 {% assets "js_all" %}
     <script type="text/javascript" src="{{ ASSET_URL }}"></script>
 {% endassets %}

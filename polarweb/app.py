@@ -1,16 +1,39 @@
 from flask import Flask, jsonify, render_template
+# from flask.ext.assets import Environment, Bundle
+from flask_assets import Environment, Bundle
 from polarweb.models.machine import Machines
 
+
+
 app = Flask(__name__)
+assets = Environment(app)
+
+js = Bundle('../bower_components/jquery/dist/jquery.js',
+            '../bower_components/bootstrap/dist/js/bootstrap.js',
+            filters='jsmin',
+            output='packed.js')
+assets.register('js_all', js)
+
+css = Bundle('../bower_components/bootstrap/dist/css/bootstrap.css',
+             output='bootstrap.css')
+assets.register('bootstrap', css)
+
 app.debug = True
 app.machines = Machines()
 
 
+# ==================================================================
+#    Routes for HTML
+# ==================================================================
 @app.route('/')
 def start():
     return render_template("index.html", machines=app.machines)
 
 
+# ==================================================================
+#    API end points. These are all jsony things used to query
+#    or send commands to this app.
+# ==================================================================
 @app.route('/api/m/<machine_name>/calibrate')
 def calibrate(machine_name):
     print "Calibrating %s" % machine_name
@@ -50,17 +73,21 @@ def set_layout(machine_name, layout_name):
     return jsonify(app.machines[machine_name].set_layout(layout_name=layout_name))
 
 
-# Control whether machine is actually drawing or not
-@app.route('/api/m/<machine_name>/drawing/<state_to_set>', methods=['POST'])
-def control_drawing(machine_name, state_to_set):
-    result = app.machines[machine_name].control_drawing(state_to_set)
+@app.route('/api/m/<machine_name>/drawing/<command>', methods=['POST'])
+def control_drawing(machine_name, command):
+    """
+    Sends commands to control the drawing: 'pause', 'run', 'cancel_page' etc.
+    """
+    result = app.machines[machine_name].control_drawing(command)
     return result
 
 
 # Control whether machine will acquire a new image immediately
-@app.route('/api/m/<machine_name>/acquire/<state_to_set>', methods=['POST'])
-def control_acquire(machine_name, state_to_set):
-    result = app.machines[machine_name].control_acquire(state_to_set)
+@app.route('/api/m/<machine_name>/acquire/<command>', methods=['POST'])
+def control_acquire(machine_name, command):
+    """ Send commands to control the image acquire behaviour: 'run', 'pause'
+    """
+    result = app.machines[machine_name].control_acquire(command)
     return result
 
 

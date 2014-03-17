@@ -2,6 +2,7 @@
 General model of the machine, including its communications route.
 """
 from datetime import datetime
+import requests
 from euclid import Vector2
 from polarweb.models.geometry import Rectangle
 from serial.tools import list_ports
@@ -29,7 +30,6 @@ class Machines(dict):
 
 class Polargraph():
 
-    DT_FORMAT = "%y-%m-%dT%H:%M:%S.%f"
     def __init__(self, name, extent, page, comm_port=None):
         self.name = name
         self.extent = extent
@@ -45,16 +45,21 @@ class Polargraph():
         self.started_time = datetime.now()
         self.set_layout('1off')
 
-        self.acquiring = False
+        self.status = 'idle'
+
+        self.auto_acquire = False
         self.drawing = False
 
 
     def uptime(self):
+        """
+        Returns the time since starting
+        """
         d = datetime.now() - self.started_time
         s = d.seconds
         hours, remainder = divmod(s, 3600)
         minutes, seconds = divmod(remainder, 60)
-        return '%s:%s:%s' % (hours, minutes, seconds)
+        return hours, minutes, seconds
 
     def state(self):
         return {'name': self.name,
@@ -82,17 +87,20 @@ class Polargraph():
                               Vector2(self.current_page.size.x/2, 0))]
 
     def control_acquire(self, command):
-        if command == 'go':
-            self.acquiring = True
-        elif command == 'stop':
-            self.acquiring = False
+        if command == 'automatic':
+            self.auto_acquire = True
+            self.acquire()
+        elif command == 'manual':
+            self.auto_acquire = False
+        elif command == 'now':
+            self.acquire()
 
         return self.state()
 
     def control_drawing(self, command):
-        if command == 'go':
+        if command == 'run':
             pass
-        elif command == 'stop':
+        elif command == 'pause':
             pass
         elif command == 'cancel_panel':
             pass
@@ -102,6 +110,12 @@ class Polargraph():
             pass
 
         return self.state()
+
+    def acquire(self):
+        """  MEthod that will acquire an image to draw.
+        """
+        response = requests.get("localhost:5001/api/acquire")
+
 
 
 class CommandQueue():

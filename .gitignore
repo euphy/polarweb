@@ -1,2 +1,6 @@
 *.pyc
 /.idea
+
+/polarweb/bower_components
+
+/polarweb/static
