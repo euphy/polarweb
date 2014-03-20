@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, render_template
-# from flask.ext.assets import Environment, Bundle
 from flask_assets import Environment, Bundle
 from polarweb.models.machine import Machines
 
@@ -10,7 +9,7 @@ assets = Environment(app)
 
 js = Bundle('../bower_components/jquery/dist/jquery.js',
             '../bower_components/bootstrap/dist/js/bootstrap.js',
-            filters='jsmin',
+            # filters='jsmin',
             output='packed.js')
 assets.register('js_all', js)
 
@@ -19,8 +18,10 @@ css = Bundle('../bower_components/bootstrap/dist/css/bootstrap.css',
 assets.register('bootstrap', css)
 
 app.debug = True
-app.machines = Machines()
 
+@app.before_first_request
+def init_machines():
+    app.machines = Machines()
 
 # ==================================================================
 #    Routes for HTML

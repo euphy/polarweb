@@ -8,28 +8,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <div class="row">
-    {% for machine_name in machines['machine_names'] %}
-        <div class="col-sm-6">
-            <h1>{{ machine_name }}</h1>
-            <p>{{machines[machine_name].state()}}</p>
-            <h2>Drawing:</h2>
-            <p>
-            {% if machines[machine_name].drawing %}
-                <button type="button" class="btn btn-primary">Pause</button><br>
-            {% else %}
-                <button type="button" class="btn btn-primary">Run</button><br>
-            {% endif %}
-            </p>
-            <h2>Acquire: {{ machines[machine_name]</h2>
-            <p>
-                <button type="button" class="btn btn-primary">Automatic</button><br>
-                <button type="button" class="btn btn-primary" disabled="disabled">Manual</button>
-                <button type="button" class="btn btn-primary" disabled="disabled">Now</button>
-            </p>
-        </div>
-        {% endfor %}
-    </div>
+<div class="container">
+	<div class="row clearfix">
+		<div class="col-md-12 column">
+			<div class="page-header">
+				<h1>
+					Polargraph.
+				</h1>
+                <button type="button" class="btn btn-lg btn-primary">Run</button>
+                <button type="button" class="btn btn-lg btn-primary disabled">Pause</button>
+
+			</div>
+			<div class="row clearfix">
+            {% for machine_name in machines['machine_names'] %}
+				<div class="col-md-6 column" id="machine_panel_{{machine_name}}">
+					<h2 title="{{machines[machine_name].state()}}">Machine: {{ machine_name }}</h2>
+                    <h3>Rescue:</h3>
+                    <button type="button" class="btn btn-lg btn-primary">Calibrate</button>
+                    <button type="button" class="btn btn-lg btn-primary">Cancel page</button>
+                    <button type="button" class="btn btn-lg btn-primary">Cancel drawing</button>
+                    <h3>Progress:</h3>
+                    <button type="button" class="btn btn-lg btn-primary">Run</button>
+                    <button type="button" class="btn btn-lg btn-primary">Pause</button>
+                    <h3>Layout:</h3>
+					<div class="btn-group btn-group-lg" data-toggle="buttons">
+						 <button class="btn btn-primary" type="button">1 off</button>
+                         <button class="btn btn-primary" type="button">4 off</button>
+						 <button class="btn btn-primary" type="button">8 off</button>
+
+					</div>
+                    <h3>Acquire:</h3>
+                    <div class="form-group">
+                        <div class="checkbox">
+                             <label><input type="checkbox" checked />Acquire new image automatically</label>
+                        </div>
+                        <button type="button" class="btn btn-lg btn-primary disabled">Take picture now</button>
+                    </div>
+                    <h3>Status:</h3>
+                    <p>{{machines[machine_name].state()}}</p>
+                    <p>Incoming queue size: {{machines[machine_name].command_queue().incoming_queue.qsize()}}</p>
+                    <p>Outgoing queue size: {{machines[machine_name].command_queue().queue.qsize()}}</p>
+				</div>
+            {% endfor %}
+			</div>
+		</div>
+	</div>
+</div>
 
 {% assets "js_all" %}
     <script type="text/javascript" src="{{ ASSET_URL }}"></script>
