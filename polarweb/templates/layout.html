@@ -48,6 +48,8 @@
                     <p>{{machines[machine_name].state()}}</p>
                     <p>Incoming queue size: {{machines[machine_name].command_queue().incoming_queue.qsize()}}</p>
                     <p>Outgoing queue size: {{machines[machine_name].command_queue().queue.qsize()}}</p>
+                    <p>Connected: {{machines[machine_name].command_queue().connected}}</p>
+                    <p>Connected: {{machines[machine_name].command_queue().connected}}</p>
 				</div>
             {% endfor %}
 			</div>

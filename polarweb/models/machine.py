@@ -48,8 +48,8 @@ class Polargraph():
         self.ready = False
         self.page_started = False
 
-        self.last_move = datetime.now()
-        self.contacted = datetime.now()
+        self.last_move = None
+        self.contacted = None
         self.started_time = datetime.now()
         self.set_layout('1off')
 
@@ -153,9 +153,9 @@ class CommandQueue():
             self.connected = True
             print "Connected successfully to %s (%s)." % (self.com_port, self.serial)
 
-        except SerialException as se:
+        except Exception as e:
             print "Oh there was an exception loading the port %s" % self.com_port
-            print se.message
+            print e.message
             self.connected = False
             self.serial = None
 
