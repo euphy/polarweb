@@ -17,8 +17,19 @@
 				</h1>
                 <button type="button" class="btn btn-lg btn-primary">Run</button>
                 <button type="button" class="btn btn-lg btn-primary disabled">Pause</button>
-
 			</div>
+            <div>
+            {% with messages = get_flashed_messages(with_categories=True) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert {{category}} alert-dismissable">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    {{message}}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            </div>
 			<div class="row clearfix">
             {% for machine_name in machines['machine_names'] %}
 				<div class="col-md-6 column" id="machine_panel_{{machine_name}}">
@@ -45,11 +56,24 @@
                         <button type="button" class="btn btn-lg btn-primary disabled">Take picture now</button>
                     </div>
                     <h3>Status:</h3>
+                    <a href="{{url_for('queue', machine_name='left')}}">Queue</a>
                     <p>{{machines[machine_name].state()}}</p>
-                    <p>Incoming queue size: {{machines[machine_name].command_queue().incoming_queue.qsize()}}</p>
-                    <p>Outgoing queue size: {{machines[machine_name].command_queue().queue.qsize()}}</p>
-                    <p>Connected: {{machines[machine_name].command_queue().connected}}</p>
-                    <p>Connected: {{machines[machine_name].command_queue().connected}}</p>
+                        <ol style="max-height: 300px; overflow-y:scroll">
+                        {% for val in machines[machine_name].queue %}
+                            <li>{{ val }}</li>
+                        {% endfor %}
+                        </ol>
+                    <p>Queue size: {{machines[machine_name].queue|length}}</p>
+
+                    <h4>Incoming queue</h4>
+                        <ol style="max-height: 100px; overflow-y:scroll">
+                        {% for val in machines[machine_name].received_log %}
+                            <li>{{ val }}</li>
+                        {% endfor %}
+                        </ol>
+                    <p>Received log size: {{machines[machine_name].received_log|length}}</p>
+
+                    <p>Connected: {{machines[machine_name].connected}}</p>
 				</div>
             {% endfor %}
 			</div>

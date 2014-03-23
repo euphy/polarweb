@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, flash
 from flask_assets import Environment, Bundle
 from polarweb.models.machine import Machines
 
@@ -18,6 +18,8 @@ css = Bundle('../bower_components/bootstrap/dist/css/bootstrap.css',
 assets.register('bootstrap', css)
 
 app.debug = True
+app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
+
 
 @app.before_first_request
 def init_machines():
@@ -28,6 +30,7 @@ def init_machines():
 # ==================================================================
 @app.route('/')
 def start():
+    flash("Welcome to the Polargraph web service!", 'alert-success')
     return render_template("index.html", machines=app.machines)
 
 
@@ -91,6 +94,12 @@ def control_acquire(machine_name, command):
     result = app.machines[machine_name].control_acquire(command)
     return result
 
+@app.route('/api/m/<machine_name>/queue', methods=['GET'])
+def queue(machine_name):
+    """  Returns the command queue as a list
+    """
+    result = {'queue': list(app.machines[machine_name].queue)}
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run()

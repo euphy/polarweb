@@ -1,6 +1,8 @@
 """
 General model of the machine, including its communications route.
 """
+import Queue
+from collections import deque
 from datetime import datetime, time
 import time
 import requests
@@ -20,16 +22,17 @@ class Machines(dict):
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
                               'page_extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
-                        com_port="COM18")
+                        comm_port="COM18")
         m2 = Polargraph("right", Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
                               'page_extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
-                        com_port="COM22")
+                        comm_port="COM22")
 
         self[m1.name] = m1
         self[m2.name] = m2
         self.machine_names = [m1.name, m2.name]
         self.ports = list(list_ports.comports())
+        print "Com ports: %s" % self.ports
 
 
 class Polargraph():
@@ -38,28 +41,66 @@ class Polargraph():
 
     """
 
-    def __init__(self, name, extent, page, com_port=None):
+    def __init__(self, name, extent, page, comm_port=None):
         self.name = name
         self.extent = extent
         self.current_page = page
+        self.comm_port = comm_port
 
-        self.comm_queue = CommandQueue(com_port)
+        self.connected = False
+        self.contacted = False
         self.calibrated = False
         self.ready = False
         self.page_started = False
 
         self.last_move = None
-        self.contacted = None
         self.started_time = datetime.now()
-        self.set_layout('1off')
+        self.set_layout('1up')
 
         self.status = 'idle'
 
         self.auto_acquire = False
         self.drawing = False
 
-    def command_queue(self):
-        return self.comm_queue
+        self.serial = None
+        self.queue = deque(['starter', 'commands', 'here', 'for', 'example'])
+        self.received_log = deque()
+        self.reading = False
+
+        # Init the serial io
+        self.setup_comm_port()
+
+
+    def setup_comm_port(self):
+        try:
+            self.serial = serial.Serial(self.comm_port)
+            self.connected = True
+            self.reading = True
+            print "Connected successfully to %s (%s)." % (self.comm_port, self.serial)
+            thread.start_new_thread(self._read_line, (None, self.received_log))
+
+        except Exception as e:
+            print "Oh there was an exception loading the port %s" % self.comm_port
+            print e.message
+            self.connected = False
+            self.serial = None
+
+    def _read_line(self, freq, received_log):
+        while True:
+            if self.reading:
+                l = self.serial.readline().strip('\r\n')
+                self.process_incoming_message(l)
+                received_log.append(l)
+                print "%s. %s" % (len(received_log), l)
+            if freq:
+                time.sleep(freq)
+
+    def _write_line(self, freq, outgoing_queue):
+        while True:
+            if self.ready:
+                self.reading = False
+                if not outgoing_queue.empty():
+                    self.serial.write(outgoing_queue.popleft())
 
     def uptime(self):
         """
@@ -88,9 +129,9 @@ class Polargraph():
                                    'panels': self._load_panels_for_layout(layout_name)}
 
     def _load_panels_for_layout(self, name):
-        if name == '1off':
+        if name == '1up':
             return [self.current_page]
-        if name == '2off':
+        if name == '2up':
             return [Rectangle(Vector2(self.current_page.size.x/2, self.current_page.size.y),
                               Vector2(0, 0)),
                     Rectangle(Vector2(self.current_page.size.x/2, self.current_page.size.y),
@@ -126,49 +167,20 @@ class Polargraph():
         """
         response = requests.get("localhost:5001/api/acquire")
 
+    def process_incoming_message(self, command):
+        """
+        Receives messages from the machine and deals with them. This will involve:
+        * raising errors
+        * confirmations of updates
+        * setting status
+        """
+        if 'READY_300' in command:
+            self.contacted = True
+            self.ready = True
+        elif 'SYNC' in command:
+            self.calibrated = True
+            self.position = Polargraph.unpack_sync(command)
 
-from serial.serialutil import SerialException
-import Queue
-
-
-class CommandQueue():
-
-    def __init__(self, com_port):
-        self.queue = Queue.Queue()
-        self.incoming_queue = Queue.Queue()
-        self.connected = False
-        self.com_port = com_port
-
-        # Init the serial io
-        self.setup_com_port()
-        if self.connected:
-            self.start_reading()
-
-    def __str__(self):
-        return "Command Queue on port %s" % self.serial.port
-
-    def setup_com_port(self):
-        try:
-            self.serial = serial.Serial(self.com_port)
-            self.connected = True
-            print "Connected successfully to %s (%s)." % (self.com_port, self.serial)
-
-        except Exception as e:
-            print "Oh there was an exception loading the port %s" % self.com_port
-            print e.message
-            self.connected = False
-            self.serial = None
-
-    def start_reading(self):
-        thread.start_new_thread(self._read_line, (None, self.incoming_queue))
-
-    def _read_line(self, freq, queue):
-        while True:
-            l = self.serial.readline().strip('\r\n')
-            queue.put(l)
-            print "%s. %s" % (queue.qsize(), l)
-            if freq:
-                time.sleep(freq)
-
-    def get_incoming_queue(self):
-        return self.queue
+    @classmethod
+    def unpack_sync(cls, command):
+        print command
