@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, flash
 from flask_assets import Environment, Bundle
+import time
 from polarweb.models.machine import Machines
 
 
@@ -94,12 +95,27 @@ def control_acquire(machine_name, command):
     result = app.machines[machine_name].control_acquire(command)
     return result
 
-@app.route('/api/m/<machine_name>/queue', methods=['GET'])
-def queue(machine_name):
+
+@app.route('/api/m/<machine_name>/queue/<response_format>', methods=['GET'])
+def queue(machine_name, response_format='json'):
     """  Returns the command queue as a list
     """
     result = {'queue': list(app.machines[machine_name].queue)}
-    return jsonify(result)
+    if response_format == 'html':
+        return render_template("queue.html", queue=result['queue'])
+    else:
+        return jsonify(result)
+
+
+@app.route('/api/m/<machine_name>/incoming/<response_format>', methods=['GET'])
+def incoming(machine_name, response_format='json'):
+    """  Returns the command queue as a list
+    """
+    result = {'queue': list(app.machines[machine_name].received_log)[-20:]}
+    if response_format == 'html':
+        return render_template("queue.html", queue=result['queue'])
+    else:
+        return jsonify(result)
 
 if __name__ == '__main__':
     app.run()

@@ -5,6 +5,9 @@
 {% assets "bootstrap" %}
     <link href="{{ ASSET_URL }}" rel="stylesheet">
 {% endassets %}
+{% assets "js_all" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+{% endassets %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
@@ -56,23 +59,18 @@
                         <button type="button" class="btn btn-lg btn-primary disabled">Take picture now</button>
                     </div>
                     <h3>Status:</h3>
-                    <a href="{{url_for('queue', machine_name='left')}}">Queue</a>
-                    <p>{{machines[machine_name].state()}}</p>
-                        <ol style="max-height: 300px; overflow-y:scroll">
-                        {% for val in machines[machine_name].queue %}
-                            <li>{{ val }}</li>
-                        {% endfor %}
-                        </ol>
-                    <p>Queue size: {{machines[machine_name].queue|length}}</p>
-
-                    <h4>Incoming queue</h4>
-                        <ol style="max-height: 100px; overflow-y:scroll">
-                        {% for val in machines[machine_name].received_log %}
-                            <li>{{ val }}</li>
-                        {% endfor %}
-                        </ol>
-                    <p>Received log size: {{machines[machine_name].received_log|length}}</p>
-
+                    <div>
+                        <h4>Command Queue:</h4>
+                        <div id="queue-{{machine_name}}"></div>
+                    </div>
+                    <div>
+                        <h4>Received Log:</h4>
+                        <div id="received_log-{{machine_name}}"></div>
+                    </div>
+                    <script type="text/javascript" >
+                        setInterval(function() { $('#queue-{{machine_name}}').load('api/m/{{machine_name}}/queue/html');}, 10000);
+                        setInterval(function() { $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');}, 10000);
+                    </script>
                     <p>Connected: {{machines[machine_name].connected}}</p>
 				</div>
             {% endfor %}
@@ -81,8 +79,7 @@
 	</div>
 </div>
 
-{% assets "js_all" %}
-    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-{% endassets %}
+
+
 </body>
 </html>

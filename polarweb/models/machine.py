@@ -78,6 +78,7 @@ class Polargraph():
             self.reading = True
             print "Connected successfully to %s (%s)." % (self.comm_port, self.serial)
             thread.start_new_thread(self._read_line, (None, self.received_log))
+            thread.start_new_thread(self._write_line, (None, self.queue))
 
         except Exception as e:
             print "Oh there was an exception loading the port %s" % self.comm_port
@@ -99,8 +100,13 @@ class Polargraph():
         while True:
             if self.ready:
                 self.reading = False
-                if not outgoing_queue.empty():
-                    self.serial.write(outgoing_queue.popleft())
+                if outgoing_queue:
+                    c = outgoing_queue.popleft()
+                    self.serial.write(c + '\r\n')
+                    print "Writing out: %s" % c
+                    self.reading = True
+                    self.ready = False
+
 
     def uptime(self):
         """
