@@ -5,6 +5,7 @@ import Queue
 from collections import deque
 from datetime import datetime, time
 import time
+from flask import flash
 import requests
 import serial
 import thread
@@ -63,7 +64,7 @@ class Polargraph():
         self.drawing = False
 
         self.serial = None
-        self.queue = deque(['starter;', 'C17,200,200,END;', 'here;', 'for;', 'example;'])
+        self.queue = deque(['C17,400,400,END'])
         self.received_log = deque()
         self.reading = False
 
@@ -104,10 +105,10 @@ class Polargraph():
                 self.reading = False
                 if outgoing_queue:
                     c = outgoing_queue.popleft()
-                    self.serial.write(c + '\r\n')
+                    self.serial.write(c+";")
                     print "Writing out: %s" % c
-                    self.reading = True
                     self.ready = False
+                self.reading = True
 
 
     def uptime(self):
@@ -170,6 +171,10 @@ class Polargraph():
 
         return self.state()
 
+    def calibrate(self):
+        self.queue.append("C48,END")
+        return self.state()
+
     def acquire(self):
         """  MEthod that will acquire an image to draw.
         """
@@ -185,10 +190,11 @@ class Polargraph():
         if 'READY_300' in command:
             self.contacted = True
             self.ready = True
-        elif 'SYNC' in command:
+        elif 'CARTESIAN' in command:
             self.calibrated = True
             self.position = Polargraph.unpack_sync(command)
 
     @classmethod
     def unpack_sync(cls, command):
-        print command
+        splitted = command.split(",")
+        return Vector2(splitted[1], splitted[2])

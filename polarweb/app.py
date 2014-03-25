@@ -39,10 +39,10 @@ def start():
 #    API end points. These are all jsony things used to query
 #    or send commands to this app.
 # ==================================================================
-@app.route('/api/m/<machine_name>/calibrate')
+@app.route('/api/m/<machine_name>/calibrate', methods=['POST'])
 def calibrate(machine_name):
     print "Calibrating %s" % machine_name
-    result = app.machines[machine_name].send_calibrate()
+    result = app.machines[machine_name].calibrate()
     return jsonify(result)
 
 
@@ -55,6 +55,7 @@ def get_machines_states():
 @app.route('/api/m/<machine_name>/', methods=['GET'])
 def get_machine(machine_name):
     return jsonify(app.machines[machine_name].state())
+
 
 @app.route('/api/m/<machine_name>/connect', methods=['POST'])
 def attempt_to_connect(machine_name):

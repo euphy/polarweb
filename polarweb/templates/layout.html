@@ -18,8 +18,6 @@
 				<h1>
 					Polargraph.
 				</h1>
-                <button type="button" class="btn btn-lg btn-primary">Run</button>
-                <button type="button" class="btn btn-lg btn-primary disabled">Pause</button>
 			</div>
             <div>
             {% with messages = get_flashed_messages(with_categories=True) %}
@@ -38,19 +36,31 @@
 				<div class="col-md-6 column" id="machine_panel_{{machine_name}}">
 					<h2 title="{{machines[machine_name].state()}}">Machine: {{ machine_name }}</h2>
                     <h3>Rescue:</h3>
-                    <button type="button" class="btn btn-lg btn-primary">Calibrate</button>
-                    <button type="button" class="btn btn-lg btn-primary">Cancel page</button>
-                    <button type="button" class="btn btn-lg btn-primary">Cancel drawing</button>
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/calibrate', function(data){
+                        console.log(data);
+                        $('#connected-{{machine_name}}').html(data);
+                        }, 'json');">
+                        Calibrate
+                    </button>
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/drawing/cancel_page', function(data){
+                        console.log(data);
+                        $('#connected-{{machine_name}}').html(data);
+                        }, 'json');">
+                        Cancel page
+                    </button>
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/drawing/cancel_panel', function(data){
+                        console.log(data);
+                        $('#connected-{{machine_name}}').html(data);
+                        }, 'json');">
+                        Cancel drawing
+                    </button>
                     <h3>Progress:</h3>
                     <button type="button" class="btn btn-lg btn-primary">Run</button>
                     <button type="button" class="btn btn-lg btn-primary">Pause</button>
                     <h3>Layout:</h3>
-					<div class="btn-group btn-group-lg" data-toggle="buttons">
-						 <button class="btn btn-primary" type="button">1 off</button>
-                         <button class="btn btn-primary" type="button">4 off</button>
-						 <button class="btn btn-primary" type="button">8 off</button>
-
-					</div>
+                    <button class="btn btn-primary" type="button">1 up</button>
+                    <button class="btn btn-primary" type="button">4 up</button>
+					<button class="btn btn-primary" type="button">8 up</button>
                     <h3>Acquire:</h3>
                     <div class="form-group">
                         <div class="checkbox">
@@ -74,8 +84,7 @@
                     <p>Connected: <span id="connected-{{machine_name}}">{{machines[machine_name].connected}}</span></p>
                     <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/connect', function(data){
                     console.log(data.connected);
-                    alert(data);
-                    $('#connected-{{machine_name}}').val(data);
+                    $('#connected-{{machine_name}}').html(data);
                     }, 'json');">Reconnect</button>
 				</div>
             {% endfor %}
