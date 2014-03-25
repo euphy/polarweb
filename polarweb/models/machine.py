@@ -63,7 +63,7 @@ class Polargraph():
         self.drawing = False
 
         self.serial = None
-        self.queue = deque(['starter', 'commands', 'here', 'for', 'example'])
+        self.queue = deque(['starter;', 'C17,200,200,END;', 'here;', 'for;', 'example;'])
         self.received_log = deque()
         self.reading = False
 
@@ -79,12 +79,14 @@ class Polargraph():
             print "Connected successfully to %s (%s)." % (self.comm_port, self.serial)
             thread.start_new_thread(self._read_line, (None, self.received_log))
             thread.start_new_thread(self._write_line, (None, self.queue))
+            return True
 
         except Exception as e:
             print "Oh there was an exception loading the port %s" % self.comm_port
             print e.message
             self.connected = False
             self.serial = None
+            return False
 
     def _read_line(self, freq, received_log):
         while True:

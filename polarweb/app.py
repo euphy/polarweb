@@ -56,6 +56,10 @@ def get_machines_states():
 def get_machine(machine_name):
     return jsonify(app.machines[machine_name].state())
 
+@app.route('/api/m/<machine_name>/connect', methods=['POST'])
+def attempt_to_connect(machine_name):
+    result = app.machines[machine_name].setup_comm_port()
+    return jsonify({'connected': result})
 
 @app.route('/api/m/<machine_name>/page', methods=['GET'])
 def get_page(machine_name):
