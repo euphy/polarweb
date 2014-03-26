@@ -57,6 +57,19 @@
                     <h3>Progress:</h3>
                     <button type="button" class="btn btn-lg btn-primary">Run</button>
                     <button type="button" class="btn btn-lg btn-primary">Pause</button>
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/pen/up', function(data){
+                        console.log(data);
+                        $('#connected-{{machine_name}}').html(data);
+                        }, 'json');">
+                        Lift pen
+                    </button>
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/pen/down', function(data){
+                        console.log(data);
+                        $('#connected-{{machine_name}}').html(data);
+                        }, 'json');">
+                        Drop pen
+                    </button>
+
                     <h3>Layout:</h3>
                     <button class="btn btn-primary" type="button">1 up</button>
                     <button class="btn btn-primary" type="button">4 up</button>
@@ -69,6 +82,7 @@
                         <button type="button" class="btn btn-lg btn-primary disabled">Take picture now</button>
                     </div>
                     <h3>Status:</h3>
+                    <div id="state-{{machine_name}}"></div>
                     <div>
                         <h4>Command Queue:</h4>
                         <div id="queue-{{machine_name}}"></div>
@@ -78,8 +92,10 @@
                         <div id="received_log-{{machine_name}}"></div>
                     </div>
                     <script type="text/javascript" >
-                        setInterval(function() { $('#queue-{{machine_name}}').load('api/m/{{machine_name}}/queue/html');}, 10000);
-                        setInterval(function() { $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');}, 10000);
+                        setInterval(function() { $('#state-{{machine_name}}').load('api/m/{{machine_name}}');
+                         $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');
+                         $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');
+                         }, 10000);
                     </script>
                     <p>Connected: <span id="connected-{{machine_name}}">{{machines[machine_name].connected}}</span></p>
                     <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/connect', function(data){

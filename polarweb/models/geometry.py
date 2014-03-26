@@ -16,4 +16,4 @@ class Rectangle():
                 and self.position.y < p.y < (self.size.y + self.position.y)
 
     def __str__(self):
-        return str(self)
+        return "Rectangle."

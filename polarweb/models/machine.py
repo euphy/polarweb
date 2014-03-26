@@ -1,11 +1,10 @@
 """
 General model of the machine, including its communications route.
 """
-import Queue
 from collections import deque
 from datetime import datetime, time
+from random import randint
 import time
-from flask import flash
 import requests
 import serial
 import thread
@@ -22,11 +21,12 @@ class Machines(dict):
         m1 = Polargraph("left",
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
-                              'page_extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
+                              'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
                         comm_port="COM18")
-        m2 = Polargraph("right", Rectangle(Vector2(305, 450), Vector2(0, 0)),
+        m2 = Polargraph("right",
+                        Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
-                              'page_extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
+                              'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
                         comm_port="COM22")
 
         self[m1.name] = m1
@@ -56,12 +56,14 @@ class Polargraph():
 
         self.last_move = None
         self.started_time = datetime.now()
-        self.set_layout('1up')
+        self.set_layout('2up')
 
         self.status = 'idle'
 
         self.auto_acquire = False
         self.drawing = False
+        self.queue_running = False
+        self.position = None
 
         self.serial = None
         self.queue = deque(['C17,400,400,END'])
@@ -101,7 +103,7 @@ class Polargraph():
 
     def _write_line(self, freq, outgoing_queue):
         while True:
-            if self.ready:
+            if self.ready and self.queue_running:
                 self.reading = False
                 if outgoing_queue:
                     c = outgoing_queue.popleft()
@@ -129,6 +131,8 @@ class Polargraph():
                 'uptime': self.uptime(),
                 'contacted': self.contacted,
                 'layout': self.current_layout['name'],
+                'layout_panels': str(self.current_layout['panels']),
+                'current_panel': str(self.current_layout['current_panel']),
                 'page': self.current_page['name']}
 
     def set_layout(self, layout_name):
@@ -136,15 +140,23 @@ class Polargraph():
             # set layout
             self.current_layout = {'name': layout_name,
                                    'panels': self._load_panels_for_layout(layout_name)}
+            self._choose_next_panel()
+
+    def _choose_next_panel(self):
+        if self.current_layout['panels']:
+            print "panels len: %s" % len(self.current_layout['panels'])
+            rand = randint(0, len(self.current_layout['panels'])-1)
+            print "Random: %s" % rand
+            self.current_layout['current_panel'] = self.current_layout['panels'][rand]
 
     def _load_panels_for_layout(self, name):
         if name == '1up':
-            return [self.current_page]
+            return [self.current_page['extent']]
         if name == '2up':
-            return [Rectangle(Vector2(self.current_page.size.x/2, self.current_page.size.y),
+            return [Rectangle(Vector2(self.current_page['extent'].size.x/2, self.current_page['extent'].size.y),
                               Vector2(0, 0)),
-                    Rectangle(Vector2(self.current_page.size.x/2, self.current_page.size.y),
-                              Vector2(self.current_page.size.x/2, 0))]
+                    Rectangle(Vector2(self.current_page['extent'].size.x/2, self.current_page['extent'].size.y),
+                              Vector2(self.current_page['extent'].size.x/2, 0))]
 
     def control_acquire(self, command):
         if command == 'automatic':
@@ -159,15 +171,28 @@ class Polargraph():
 
     def control_drawing(self, command):
         if command == 'run':
-            pass
+            self.queue_running = True
         elif command == 'pause':
-            pass
+            self.queue_running = False
         elif command == 'cancel_panel':
+            self.queue.clear()
+            self._choose_next_panel()
             pass
         elif command == 'cancel_page':
-            pass
-        elif command == 'retry_panel':
-            pass
+            self.queue.clear()
+            self.queue_running = False
+            self.auto_acquire = False
+            self.current_layout['panels'].clear()
+        elif command == 'reuse_panel':
+            self.queue.clear()
+
+        return self.state()
+
+    def control_pen(self, command):
+        if command == 'up':
+            self.queue.append("C14,0,END")
+        elif command == 'down':
+            self.queue.append("C13,200,END")
 
         return self.state()
 
@@ -198,3 +223,4 @@ class Polargraph():
     def unpack_sync(cls, command):
         splitted = command.split(",")
         return Vector2(splitted[1], splitted[2])
+

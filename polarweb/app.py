@@ -89,7 +89,15 @@ def control_drawing(machine_name, command):
     Sends commands to control the drawing: 'pause', 'run', 'cancel_page' etc.
     """
     result = app.machines[machine_name].control_drawing(command)
-    return result
+    return jsonify(result)
+
+@app.route('/api/m/<machine_name>/pen/<command>', methods=['POST'])
+def control_pen(machine_name, command):
+    """
+     Sends pen-type commands to the drawing: 'pen_up', 'pen_down' etc.
+    """
+    result = app.machines[machine_name].control_pen(command)
+    return jsonify(result)
 
 
 # Control whether machine will acquire a new image immediately
@@ -98,7 +106,7 @@ def control_acquire(machine_name, command):
     """ Send commands to control the image acquire behaviour: 'run', 'pause'
     """
     result = app.machines[machine_name].control_acquire(command)
-    return result
+    return jsonify(result)
 
 
 @app.route('/api/m/<machine_name>/queue/<response_format>', methods=['GET'])
