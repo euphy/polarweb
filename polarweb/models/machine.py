@@ -3,13 +3,15 @@ General model of the machine, including its communications route.
 """
 from collections import deque
 from datetime import datetime, time
+import os
 from random import randint
 import time
 import requests
 import serial
 import thread
+from xml.dom import minidom
 from euclid import Vector2
-from polarweb.models.geometry import Rectangle
+from polarweb.models.geometry import Rectangle, Layout
 from serial.tools import list_ports
 
 
@@ -36,6 +38,49 @@ class Machines(dict):
         print "Com ports: %s" % self.ports
 
 
+class PolargraphImageGetter():
+    """
+    Off-line implementation of the image getter. The PIG. See.
+    """
+    def __init__(self):
+        pass
+
+
+    def get(self, key=None):
+        if key:
+            # lookup existing file
+            print "Key: %s" % key
+            filepath = os.path.abspath(os.path.join("..\svg", key))
+            print filepath
+            print "is file: %s" % os.path.isfile(filepath)
+            xmldoc = minidom.parse(filepath)
+            i = 0
+            paths = []
+            for el in xmldoc.getElementsByTagName('path'):
+                i += 1
+                path_string = el.getAttribute('d')
+                splitted = path_string.split(" ")
+                couplets = []
+                for bit in splitted:
+                    if bit == 'z':
+                        couplets.append(couplets[0])
+                        break
+                    elif bit in 'Lm':
+                        continue
+
+                    coords = bit.split(",")
+                    coord = (float(coords[0]), float(coords[1]))
+                    couplets.append(coord)
+
+                paths.append(couplets)
+
+            print paths
+            return paths
+        else:
+            # capture a new file
+            pass
+
+
 class Polargraph():
     """
     There's going to be a threaded / multiprocess thing going on here.
@@ -48,6 +93,7 @@ class Polargraph():
         self.current_page = page
         self.comm_port = comm_port
 
+        self.set_layout(page['extent'], '2x2')
         self.connected = False
         self.contacted = False
         self.calibrated = False
@@ -56,7 +102,6 @@ class Polargraph():
 
         self.last_move = None
         self.started_time = datetime.now()
-        self.set_layout('2up')
 
         self.status = 'idle'
 
@@ -69,6 +114,8 @@ class Polargraph():
         self.queue = deque(['C17,400,400,END'])
         self.received_log = deque()
         self.reading = False
+
+        self.paths = PolargraphImageGetter().get('drawing-1.svg')
 
         # Init the serial io
         self.setup_comm_port()
@@ -111,6 +158,8 @@ class Polargraph():
                     print "Writing out: %s" % c
                     self.ready = False
                 self.reading = True
+            if freq:
+                time.sleep(freq)
 
 
     def uptime(self):
@@ -130,33 +179,7 @@ class Polargraph():
                 'last_move': self.last_move,
                 'uptime': self.uptime(),
                 'contacted': self.contacted,
-                'layout': self.current_layout['name'],
-                'layout_panels': str(self.current_layout['panels']),
-                'current_panel': str(self.current_layout['current_panel']),
                 'page': self.current_page['name']}
-
-    def set_layout(self, layout_name):
-        if layout_name:
-            # set layout
-            self.current_layout = {'name': layout_name,
-                                   'panels': self._load_panels_for_layout(layout_name)}
-            self._choose_next_panel()
-
-    def _choose_next_panel(self):
-        if self.current_layout['panels']:
-            print "panels len: %s" % len(self.current_layout['panels'])
-            rand = randint(0, len(self.current_layout['panels'])-1)
-            print "Random: %s" % rand
-            self.current_layout['current_panel'] = self.current_layout['panels'][rand]
-
-    def _load_panels_for_layout(self, name):
-        if name == '1up':
-            return [self.current_page['extent']]
-        if name == '2up':
-            return [Rectangle(Vector2(self.current_page['extent'].size.x/2, self.current_page['extent'].size.y),
-                              Vector2(0, 0)),
-                    Rectangle(Vector2(self.current_page['extent'].size.x/2, self.current_page['extent'].size.y),
-                              Vector2(self.current_page['extent'].size.x/2, 0))]
 
     def control_acquire(self, command):
         if command == 'automatic':
@@ -176,13 +199,13 @@ class Polargraph():
             self.queue_running = False
         elif command == 'cancel_panel':
             self.queue.clear()
-            self._choose_next_panel()
+            self.layout.remove_panel()
             pass
         elif command == 'cancel_page':
             self.queue.clear()
             self.queue_running = False
             self.auto_acquire = False
-            self.current_layout['panels'].clear()
+            self.layout.clear_panels()
         elif command == 'reuse_panel':
             self.queue.clear()
 
@@ -201,8 +224,9 @@ class Polargraph():
         return self.state()
 
     def acquire(self):
-        """  MEthod that will acquire an image to draw.
+        """  Method that will acquire an image to draw.
         """
+        svg = PolargraphImageGetter.get()
         response = requests.get("localhost:5001/api/acquire")
 
     def process_incoming_message(self, command):
@@ -223,4 +247,8 @@ class Polargraph():
     def unpack_sync(cls, command):
         splitted = command.split(",")
         return Vector2(splitted[1], splitted[2])
+
+    def set_layout(self, page, layout_name):
+        self.layout = Layout(page, layout_name)
+        self.layout.use_random_panel()
 

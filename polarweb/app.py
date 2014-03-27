@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, flash
+from flask import Flask, jsonify, render_template, flash, Response
 from flask_assets import Environment, Bundle
 import time
 from polarweb.models.machine import Machines
@@ -107,6 +107,13 @@ def control_acquire(machine_name, command):
     """
     result = app.machines[machine_name].control_acquire(command)
     return jsonify(result)
+
+@app.route('/api/m/<machine_name>/acquire', methods=['GET'])
+def get_loaded_paths(machine_name):
+    """ Returns the paths of the current artwork.
+    """
+    result = app.machines[machine_name].paths
+    return jsonify({'paths': result})
 
 
 @app.route('/api/m/<machine_name>/queue/<response_format>', methods=['GET'])
