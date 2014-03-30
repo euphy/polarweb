@@ -1,4 +1,8 @@
-from PIL import Image
+try:
+    from PIL import Image
+except:
+    import Image
+
 import numpy
 
 from paths import build_graph, build_paths, filter_paths, paths2svg, paths2json
