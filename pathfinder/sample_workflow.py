@@ -31,5 +31,8 @@ def run(input_img='./posterized_slice.png',
     # anchor_angle_error with a low threshold is good for a final cleanup
     paths = subsampling_decimation(paths, anchor_angle_error, 0.05)
 
+    # finally remove paths that have been decimated down to two three nodes
+    paths = filter_paths(paths, min_length=3)
+
     paths2svg(paths, image.size, 'paths.svg', scale=scale, show_nodes=True)
     paths2json(paths, 'paths.json')
