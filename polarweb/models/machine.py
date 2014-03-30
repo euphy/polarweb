@@ -24,7 +24,7 @@ class Machines(dict):
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
                               'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
-                        comm_port="COM18")
+                        comm_port="COM3")
         m2 = Polargraph("right",
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',

@@ -21,7 +21,6 @@ assets.register('bootstrap', css)
 app.debug = True
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
 
-
 @app.before_first_request
 def init_machines():
     app.machines = Machines()
@@ -138,4 +137,4 @@ def incoming(machine_name, response_format='json'):
         return jsonify(result)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=80)
