@@ -13,7 +13,7 @@ core of the new Polargraph control software.
 
 Secondarily, there are fairly sophisticated helper routines that are interested 
 in capturing faces from a webcam (image_grabber), and converting them into vector 
-artwork (pathfinder) that are drawable using the polargraph machine. 
+artwork (pathfinder, contributed by nat-n) that are drawable using the polargraph machine. 
 
 These are in this repo, but are entirely separate to the central _polarweb_ project 
 in the sense that they have their own requirements and libraries, and getting one 
