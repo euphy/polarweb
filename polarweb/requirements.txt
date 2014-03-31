@@ -1,5 +1,4 @@
 pyserial
-webassets
 numpy
 euclid
 requests
