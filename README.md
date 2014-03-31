@@ -44,15 +44,16 @@ http://pyserial.sourceforge.net/
 
 Image Grabber:
 * OpenCV 2.* (cv2)
+
 http://opencvpython.blogspot.in/2012/05/install-opencv-in-windows-for-python.html
 http://stackoverflow.com/questions/10417108/what-is-different-between-all-these-opencv-python-interfaces
 
 Pathfinder:
-* PIL
+* Pillow
+
 http://stackoverflow.com/questions/7133193/what-is-going-on-with-pil-and-the-import-statement
 
 Resources
 ---------
 
-[http://scriptdraw.com/] (SVG test renderer
-)
+[Scriptdraw SVG test renderer] (http://scriptdraw.com/)
