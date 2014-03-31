@@ -29,8 +29,8 @@ are full, then it will beg for attention (new sheet, please).
 Requirements
 ------------
 
-Mercifully, it's all turned out to be in Python. It is targetting a Windows environment, so 
-I think there is some stupid in there somewhere.
+Mercifully, it's all turned out to be in Python. It is targetting a Windows environment, but I think
+it's pretty cross-platform in reality.
 
 Core:
 * pyserial
@@ -44,15 +44,19 @@ http://pyserial.sourceforge.net/
 
 Image Grabber:
 * OpenCV 2.* (cv2)
+
 http://opencvpython.blogspot.in/2012/05/install-opencv-in-windows-for-python.html
+
 http://stackoverflow.com/questions/10417108/what-is-different-between-all-these-opencv-python-interfaces
 
 Pathfinder:
-* PIL
+* Pillow
+
+http://www.lfd.uci.edu/~gohlke/pythonlibs/
+
 http://stackoverflow.com/questions/7133193/what-is-going-on-with-pil-and-the-import-statement
 
 Resources
 ---------
 
-[http://scriptdraw.com/] (SVG test renderer
-)
+[Scriptdraw SVG test renderer] (http://scriptdraw.com/)
