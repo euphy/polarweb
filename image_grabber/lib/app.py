@@ -1,5 +1,10 @@
 import cv2
+from datetime import datetime
+import os
+from random import randint
 import time
+from PIL import Image
+import numpy
 
 from face import Tracking, Framing
 import image as face_image
@@ -13,8 +18,8 @@ class ImageGrabber(object):
     faces = None
 
     def __init__(self,
-                 debug=False, required_score=25, blur=2,
-                 posterize_levels=3, threshold_zoom=0.9):
+                 debug=False, required_score=15, blur=2,
+                 posterize_levels=3, threshold_zoom=0.9, input_image=None):
 
         self.debug = debug
         self.blur = blur
@@ -25,11 +30,17 @@ class ImageGrabber(object):
             'resource/haarcascade_frontalface_default.xml')
 
         self.camera = cv2.VideoCapture(0)
-        # time.sleep(1)
         self.set_resolution(640, 480)
 
         self.tracking = Tracking()
         self.tracking.score_max = required_score
+
+        try:
+            if input_image:
+                self.preloaded_image = Image.open(input_image)
+        except:
+            print "Input image (%s) was not loaded." % input_image
+            pass
 
     def set_resolution(self, x, y):
         self.width = x
@@ -38,7 +49,27 @@ class ImageGrabber(object):
         self.camera.set(3, x)
         self.camera.set(4, y)
 
-    def get_image(self):
+    def process_image(self, img):
+        # Blur and dynamically threshold it
+        print "1: %s" % img[0]
+        self.save_image_as_file(img, 'png')
+        img = cv2.blur(img, ksize=(self.blur, self.blur))
+        print "2: %s" % img[0]
+        self.save_image_as_file(img, 'png')
+        thresholds = face_image.get_threshold_boundaries(
+            img, self.posterize_levels)
+        img = face_image.threshold(img, thresholds)
+        print "3: %s" % img[0]
+        self.save_image_as_file(img, 'png')
+
+        if self.debug:
+            cv2.imshow('frame', img)
+            cv2.waitKey(1)
+            # time.sleep(4)
+
+        return img
+
+    def get_image(self, filename=None):
         if self.debug:
             print "Obtaining face lock..."
 
@@ -49,18 +80,56 @@ class ImageGrabber(object):
 
         image = self._isolate_face()
 
-        self.close()
+        if filename:
+            self.save_image_as_file(image, filename)
 
+        self.close()
         return image
+
+
+    def save_image_as_file(self, image_array, filename):
+        """
+        If filename has no extension, then it is used as the extension.
+        Eg filename == 'png' then, a default filename is generated, with a png extension.
+        """
+        # for row in image_array:
+        #     print row
+        im = Image.fromarray(image_array)
+        im.show()
+
+        _, ext = os.path.splitext(filename)
+        if not ext:
+            ext = filename
+            filename = None
+
+        if filename:
+            full_file_path = os.path.abspath(filename)
+        else:
+            full_file_path = os.path.abspath("../pics/%s/%s%d.%s"
+                                             % (ext,
+                                                datetime.now().strftime("%Y%m%d-%H%M%S.%f"),
+                                                randint(1000, 9999),
+                                                ext))
+
+        path, fname = os.path.split(full_file_path)
+
+        if path and not os.path.exists(path):
+            os.makedirs(path)
+
+        if im.mode != 'RGB':
+            im = im.convert('RGB')
+
+        print "Saving to %s" % full_file_path
+        im.save(full_file_path)
+        return full_file_path
+
+#------------------#------------------------------------------------------#
+    # Internal Methods #
+    #------------------#
 
     def close(self):
         self.camera.release()
         cv2.destroyAllWindows()
-
-    #------------------#------------------------------------------------------#
-    # Internal Methods #
-    #------------------#
-
     def _isolate_face(self):
         # Find the biggest face
         faces = self.tracking.faces_by_size()
@@ -78,15 +147,7 @@ class ImageGrabber(object):
             self.gray, framing.single_portrait(face_rect))
 
         # Blur and dynamically threshold it
-        final_img = cv2.blur(final_img, ksize=(self.blur, self.blur))
-        thresholds = face_image.get_threshold_boundaries(
-            face_img, self.posterize_levels)
-        final_img = face_image.threshold(final_img, thresholds)
-
-        if self.debug:
-            cv2.imshow('frame', final_img)
-            cv2.waitKey(1)
-            time.sleep(4)
+        final_img = self.process_image(final_img)
 
         return final_img
 

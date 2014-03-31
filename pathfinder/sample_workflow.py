@@ -1,7 +1,4 @@
-try:
-    from PIL import Image
-except:
-    import Image
+from PIL import Image
 
 import numpy
 

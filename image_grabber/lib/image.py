@@ -8,7 +8,11 @@ def threshold(image, boundaries):
         level = np.float64(float(i + 1) / len(boundaries))
         oot[image > boundary] = level
 
-    return oot
+    # multiply and get back to good ole ints
+    for each in oot:
+        each *= 255
+
+    return oot.astype(dtype=np.uint8)
 
 
 def histogram(image):

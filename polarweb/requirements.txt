@@ -5,4 +5,4 @@ requests
 flask
 flask-assets
 jsmin
-svgwrite
+pillow
