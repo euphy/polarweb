@@ -29,8 +29,8 @@ are full, then it will beg for attention (new sheet, please).
 Requirements
 ------------
 
-Mercifully, it's all turned out to be in Python. It is targetting a Windows environment, so 
-I think there is some stupid in there somewhere.
+Mercifully, it's all turned out to be in Python. It is targetting a Windows environment, but I think
+it's pretty cross-platform in reality.
 
 Core:
 * pyserial
