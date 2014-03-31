@@ -214,7 +214,8 @@ def total_divergence_error(path_segment):
     Returns the maximum distance of a node in the path from the line segment
     defined by the initial and final nodes.
 
-    This function produces a decent approximation of the change of shape
+    When nodes are tighly and evenly spaced (such as in the initial undecimated
+    paths), this function produces a decent measure of the change of shape/area
     incurred by replacing the given path segment with a single edge.
     """
     if len(path_segment) < 3:
