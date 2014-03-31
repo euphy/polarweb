@@ -20,6 +20,8 @@ class Machines(dict):
         super(Machines, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
+        self.list_ports()
+
         m1 = Polargraph("left",
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
@@ -34,9 +36,21 @@ class Machines(dict):
         self[m1.name] = m1
         self[m2.name] = m2
         self.machine_names = [m1.name, m2.name]
+
+        self['indicator'] = AcquireIndicator(comm_port="COM7")
+
+
+    def list_ports(self):
         self.ports = list(list_ports.comports())
         print "Com ports: %s" % self.ports
+        return self.ports
 
+class AcquireIndicator():
+    def __init__(self, comm_port):
+        self.comm_port = comm_port
+
+    def setColour(self, r, g, b):
+        pass
 
 class PolargraphImageGetter():
     """
