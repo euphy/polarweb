@@ -46,10 +46,13 @@ Image Grabber:
 * OpenCV 2.* (cv2)
 
 http://opencvpython.blogspot.in/2012/05/install-opencv-in-windows-for-python.html
+
 http://stackoverflow.com/questions/10417108/what-is-different-between-all-these-opencv-python-interfaces
 
 Pathfinder:
 * Pillow
+
+http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 http://stackoverflow.com/questions/7133193/what-is-going-on-with-pil-and-the-import-statement
 
