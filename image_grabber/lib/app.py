@@ -51,16 +51,10 @@ class ImageGrabber(object):
 
     def process_image(self, img):
         # Blur and dynamically threshold it
-        print "1: %s" % img[0]
-        self.save_image_as_file(img, 'png')
         img = cv2.blur(img, ksize=(self.blur, self.blur))
-        print "2: %s" % img[0]
-        self.save_image_as_file(img, 'png')
         thresholds = face_image.get_threshold_boundaries(
             img, self.posterize_levels)
         img = face_image.threshold(img, thresholds)
-        print "3: %s" % img[0]
-        self.save_image_as_file(img, 'png')
 
         if self.debug:
             cv2.imshow('frame', img)
