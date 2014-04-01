@@ -3,6 +3,7 @@ General model of the machine, including its communications route.
 """
 from collections import deque
 from datetime import datetime, time
+from multiprocessing import Process
 import os
 from random import randint
 import time
@@ -208,16 +209,21 @@ class Polargraph():
         self.queue.append("C48,END")
         return self.state()
 
-    def acquire(self):
-        """  Method that will acquire an image to draw.
-        """
-
+    def ac(self):
         grabber = ImageGrabber(debug=True)
         img_filename = grabber.get_image(filename="png")
         print "Got %s" % img_filename
         face = os.open(img_filename)
 
-        sample_workflow.run(input_img=img_filename)
+        paths = sample_workflow.run(input_img=img_filename)
+        self.paths = paths
+        return
+
+    def acquire(self):
+        """  Method that will acquire an image to draw.
+        """
+        p = Process(target=self.ac, args=())
+        p.start()
 
 
     def process_incoming_message(self, command):
