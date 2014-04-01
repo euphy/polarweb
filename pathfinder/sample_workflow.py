@@ -8,7 +8,7 @@ from decimation import subsampling_decimation, anchor_angle_error, \
     right_angled_area_error, max_divergence_error, total_divergence_error
 
 
-def run(input_img='./posterized_slice.png',
+def run(input_img='./sampleinput.png',
         min_path_len=20,
         max_path_count=100,
         smoothing_levels=3,
@@ -35,5 +35,5 @@ def run(input_img='./posterized_slice.png',
     # finally remove paths that have been decimated down to two three nodes
     paths = filter_paths(paths, min_length=3)
 
-    paths2svg(paths, image.size, 'paths.svg', scale=scale, show_nodes=True)
-    paths2json(paths, 'paths.json')
+    paths2svg(paths, image.size, '../pics/svg/paths.svg', scale=scale, show_nodes=True)
+    paths2json(paths, '../pics/json/paths.json')

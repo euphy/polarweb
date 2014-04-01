@@ -72,14 +72,15 @@
 
                     <h3>Layout:</h3>
                     <button class="btn btn-primary" type="button">1 up</button>
-                    <button class="btn btn-primary" type="button">4 up</button>
-					<button class="btn btn-primary" type="button">8 up</button>
+                    <button class="btn btn-primary" type="button">2x2</button>
+					<button class="btn btn-primary" type="button">3x3</button>
+					<button class="btn btn-primary" type="button">4x4</button>
                     <h3>Acquire:</h3>
                     <div class="form-group">
                         <div class="checkbox">
                              <label><input type="checkbox" checked />Acquire new image automatically</label>
                         </div>
-                        <button type="button" class="btn btn-lg btn-primary disabled">Take picture now</button>
+                        <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/acquire/now');">Take picture now</button>
                     </div>
                     <h3>Status:</h3>
                     <div id="state-{{machine_name}}"></div>

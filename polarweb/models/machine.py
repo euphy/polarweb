@@ -11,6 +11,8 @@ import serial
 import thread
 from xml.dom import minidom
 from euclid import Vector2
+from image_grabber.lib.app import ImageGrabber
+from pathfinder import sample_workflow
 from polarweb.models.geometry import Rectangle, Layout
 from serial.tools import list_ports
 
@@ -31,7 +33,7 @@ class Machines(dict):
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
                               'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
-                        comm_port="COM22")
+                        comm_port="COM18")
 
         self[m1.name] = m1
         self[m2.name] = m2
@@ -61,38 +63,7 @@ class PolargraphImageGetter():
 
 
     def get(self, key=None):
-        if key:
-            # lookup existing file
-            print "Key: %s" % key
-            filepath = os.path.abspath(os.path.join("..\svg", key))
-            print filepath
-            print "is file: %s" % os.path.isfile(filepath)
-            xmldoc = minidom.parse(filepath)
-            i = 0
-            paths = []
-            for el in xmldoc.getElementsByTagName('path'):
-                i += 1
-                path_string = el.getAttribute('d')
-                splitted = path_string.split(" ")
-                couplets = []
-                for bit in splitted:
-                    if bit == 'z':
-                        couplets.append(couplets[0])
-                        break
-                    elif bit in 'Lm':
-                        continue
-
-                    coords = bit.split(",")
-                    coord = (float(coords[0]), float(coords[1]))
-                    couplets.append(coord)
-
-                paths.append(couplets)
-
-            print paths
-            return paths
-        else:
-            # capture a new file
-            pass
+        pass
 
 
 class Polargraph():
@@ -129,7 +100,7 @@ class Polargraph():
         self.received_log = deque()
         self.reading = False
 
-        self.paths = PolargraphImageGetter().get('drawing-1.svg')
+        self.paths = PolargraphImageGetter().get('../svg_samples/pg-eisf.svg')
 
         # Init the serial io
         self.setup_comm_port()
@@ -240,8 +211,14 @@ class Polargraph():
     def acquire(self):
         """  Method that will acquire an image to draw.
         """
-        svg = PolargraphImageGetter.get()
-        response = requests.get("localhost:5001/api/acquire")
+
+        grabber = ImageGrabber(debug=True)
+        img_filename = grabber.get_image(filename="png")
+        print "Got %s" % img_filename
+        face = os.open(img_filename)
+
+        sample_workflow.run(input_img=img_filename)
+
 
     def process_incoming_message(self, command):
         """
