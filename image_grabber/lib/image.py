@@ -12,7 +12,7 @@ def threshold(image, boundaries):
     for each in oot:
         each *= 255
 
-    return oot.astype(dtype=np.uint8)
+    return oot.astype(np.uint8)
 
 
 def histogram(image):

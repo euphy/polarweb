@@ -157,3 +157,6 @@ class Framing(object):
         dy = (1.0 - ratio) * float(h) / 2
 
         return x + dx, y + dy, w - 2 * dx, h - 2 * dy
+
+    def scale_rect(self, rect, ratio):
+        return [i*ratio for i in rect]

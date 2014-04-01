@@ -1,14 +1,12 @@
-import cv2
-from datetime import datetime
 import os
+import cv2
+
+from datetime import datetime
 from random import randint
-import time
 from PIL import Image
-import numpy
 
 from face import Tracking, Framing
 import image as face_image
-
 
 class ImageGrabber(object):
     width = None
@@ -30,7 +28,7 @@ class ImageGrabber(object):
             'resource/haarcascade_frontalface_default.xml')
 
         self.camera = cv2.VideoCapture(0)
-        self.set_resolution(640, 480)
+        self.set_resolution(640, 360)
 
         self.tracking = Tracking()
         self.tracking.score_max = required_score
@@ -49,11 +47,13 @@ class ImageGrabber(object):
         self.camera.set(3, x)
         self.camera.set(4, y)
 
-    def process_image(self, img):
+    def process_image(self, img, face_img):
         # Blur and dynamically threshold it
         img = cv2.blur(img, ksize=(self.blur, self.blur))
+
         thresholds = face_image.get_threshold_boundaries(
-            img, self.posterize_levels)
+            face_img, self.posterize_levels)
+
         img = face_image.threshold(img, thresholds)
 
         if self.debug:
@@ -80,7 +80,6 @@ class ImageGrabber(object):
         self.close()
         return image
 
-
     def save_image_as_file(self, image_array, filename):
         """
         If filename has no extension, then it is used as the extension.
@@ -99,13 +98,14 @@ class ImageGrabber(object):
         if filename:
             full_file_path = os.path.abspath(filename)
         else:
-            full_file_path = os.path.abspath("../pics/%s/%s%d.%s"
-                                             % (ext,
-                                                datetime.now().strftime("%Y%m%d-%H%M%S.%f"),
-                                                randint(1000, 9999),
-                                                ext))
+            full_file_path = os.path.abspath(
+                "../pics/%s/%s%d.%s" % (
+                    ext,
+                    datetime.now().strftime("%Y%m%d-%H%M%S.%f"),
+                    randint(1000, 9999),
+                    ext))
 
-        path, fname = os.path.split(full_file_path)
+        path, _ = os.path.split(full_file_path)
 
         if path and not os.path.exists(path):
             os.makedirs(path)
@@ -115,24 +115,29 @@ class ImageGrabber(object):
 
         print "Saving to %s" % full_file_path
         im.save(full_file_path)
-        return full_file_path
 
-#------------------#------------------------------------------------------#
-    # Internal Methods #
-    #------------------#
+        return full_file_path
 
     def close(self):
         self.camera.release()
         cv2.destroyAllWindows()
+
+    #------------------#------------------------------------------------------#
+    # Internal Methods #
+    #------------------#
+
     def _isolate_face(self):
         # Find the biggest face
         faces = self.tracking.faces_by_size()
         biggest_face_id = faces[0][0]
 
+        self.set_resolution(1920, 1080)
+        self._capture_frame(observe=False)
         framing = Framing(self.gray)
 
         # Get a tight image around the face
         face_rect = self.tracking.face_boundary(biggest_face_id)
+        face_rect = framing.scale_rect(face_rect, 3)
         face_img = face_image.sub_image(
             self.frame, framing.tighten_rect(face_rect, self.threshold_zoom))
 
@@ -141,20 +146,20 @@ class ImageGrabber(object):
             self.gray, framing.single_portrait(face_rect))
 
         # Blur and dynamically threshold it
-        final_img = self.process_image(final_img)
+        final_img = self.process_image(final_img, face_img)
 
         return final_img
 
-    def _capture_frame(self):
+    def _capture_frame(self, observe=True):
         captured = False
         while not captured:
             captured, self.frame = self.camera.read()
 
-
         self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        self.faces = self.face_cascade.detectMultiScale(self.gray, 1.3, 5)
 
-        self.tracking.observe(self.faces)
+        if observe:
+            self.faces = self.face_cascade.detectMultiScale(self.gray, 1.3, 5)
+            self.tracking.observe(self.faces)
 
         return self.frame
 
