@@ -26,8 +26,9 @@ class ImageGrabber(object):
         self.posterize_levels = posterize_levels
         self.threshold_zoom = threshold_zoom
 
+        path = os.path.split(__file__)[0]
         self.face_cascade = cv2.CascadeClassifier(
-            'resource/haarcascade_frontalface_default.xml')
+            os.path.join(path, '../resource/haarcascade_frontalface_default.xml'))
 
         self.camera = cv2.VideoCapture(0)
         self.set_resolution(640, 480)
@@ -73,11 +74,12 @@ class ImageGrabber(object):
             print "Face lock obtained"
 
         image = self._isolate_face()
+        self.close()
 
         if filename:
-            self.save_image_as_file(image, filename)
+            filename = self.save_image_as_file(image, filename)
+            return filename
 
-        self.close()
         return image
 
 
@@ -109,9 +111,6 @@ class ImageGrabber(object):
 
         if path and not os.path.exists(path):
             os.makedirs(path)
-
-        if im.mode != 'RGB':
-            im = im.convert('RGB')
 
         print "Saving to %s" % full_file_path
         im.save(full_file_path)

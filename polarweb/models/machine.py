@@ -70,8 +70,9 @@ class PolargraphImageGetter():
 class Polargraph():
     """
     There's going to be a threaded / multiprocess thing going on here.
-
     """
+
+    camera_lock = False
 
     def __init__(self, name, extent, page, comm_port=None):
         self.name = name
@@ -210,17 +211,21 @@ class Polargraph():
         return self.state()
 
     def ac(self):
-        grabber = ImageGrabber(debug=False)
-        img_filename = grabber.get_image(filename="png")
-        print "Got %s" % img_filename
+        try:
+            grabber = ImageGrabber(debug=True)
+            img_filename = grabber.get_image(filename="png")
+            print "Got %s" % img_filename
 
-        paths = sample_workflow.run(input_img=img_filename)
-        self.paths = paths
-        return
+            paths = sample_workflow.run(input_img=img_filename)
+            self.paths = paths
+        finally:
+            Polargraph.camera_lock = False
 
     def acquire(self):
         """  Method that will acquire an image to draw.
         """
+        Polargraph.camera_lock = True
+        self.paths = None
         p = Process(target=self.ac, args=())
         p.start()
 
