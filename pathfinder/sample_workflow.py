@@ -1,3 +1,4 @@
+import os
 from PIL import Image
 
 import numpy
@@ -35,5 +36,12 @@ def run(input_img='./sampleinput.png',
     # finally remove paths that have been decimated down to two three nodes
     paths = filter_paths(paths, min_length=3)
 
-    paths2svg(paths, image.size, '../pics/svg/paths.svg', scale=scale, show_nodes=True)
-    paths2json(paths, '../pics/json/paths.json')
+
+    name, ext = os.path.splitext(input_img)
+    svg_filename = name + '.svg'
+    json_filename = name + '.json'
+
+    paths2svg(paths, image.size, svg_filename, scale=scale, show_nodes=False)
+    paths2json(paths, json_filename)
+
+    return paths

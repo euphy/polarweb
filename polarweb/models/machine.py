@@ -210,10 +210,9 @@ class Polargraph():
         return self.state()
 
     def ac(self):
-        grabber = ImageGrabber(debug=True)
+        grabber = ImageGrabber(debug=False)
         img_filename = grabber.get_image(filename="png")
         print "Got %s" % img_filename
-        face = os.open(img_filename)
 
         paths = sample_workflow.run(input_img=img_filename)
         self.paths = paths
