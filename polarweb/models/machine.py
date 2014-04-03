@@ -145,7 +145,7 @@ class Polargraph():
             if self.ready and self.queue_running:
                 self.reading = False
                 if outgoing_queue:
-                    self.status = 'running'
+                    self.status = 'serving'
                     c = outgoing_queue.popleft()
                     self.serial.write(c+";")
                     print "Writing out: %s" % c
@@ -186,6 +186,9 @@ class Polargraph():
                 print "%s Appending %s commands the the queue." % (self.name, len(commands))
                 self.queue.append(commands)
 
+                if self.queue:
+                    self.status = "serving"
+                    self.layout.remove_current_panel()
 
             if freq:
                 time.sleep(freq)
@@ -288,7 +291,8 @@ class Polargraph():
 
         paths = sample_workflow.run(input_img=img_filename)
         print paths
-        paths_queue.put(paths)
+        for i in paths:
+            paths_queue.put(i)
 
     def acquire(self):
         """  Method that will acquire an image to draw.
@@ -302,7 +306,7 @@ class Polargraph():
         paths_queue = Queue()
         p = Process(target=self.ac, args=(paths_queue,))
         p.start()
-        p.join(60)
+        p.join(120)
 
         self.paths = []
         paths_queue.put('STOP')
@@ -341,10 +345,20 @@ class Polargraph():
             self.status = 'idle'
 
     def build_commands(self, paths):
+        print paths
         result = []
-        for p in paths:
-            result.append("C12,%s,END" % p)
 
+        if paths:
+            for path in paths:
+                first_point = True
+                for point in path:
+                    if first_point:
+                        result.append("pen up")
+                        result.append("C12,%s,%s,END" % (point[0], point[1]))
+                        result.append("pen down")
+                        first_point = False
+                    else:
+                        result.append("C12,%s,%s,END" % (point[0], point[1]))
         return result
 
 

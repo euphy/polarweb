@@ -91,4 +91,5 @@ class Layout():
             raise ValueError("No panel was available to scale to.")
 
         # determine a scaling factor
+        return paths
 
