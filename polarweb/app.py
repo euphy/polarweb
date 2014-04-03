@@ -1,6 +1,8 @@
-from flask import Flask, jsonify, render_template, flash, Response
+import os
+from flask import Flask, jsonify, render_template, flash, Response, send_file, make_response
 from flask_assets import Environment, Bundle
 import time
+import io
 from polarweb.models.machine import Machines
 
 
@@ -56,10 +58,19 @@ def get_machine(machine_name):
     return jsonify(app.machines[machine_name].state())
 
 
+@app.route('/api/m/<machine_name>/svg', methods=['GET'])
+def get_machine_svg(machine_name):
+    svg_filename = app.machines[machine_name].get_machine_as_svg()
+    resp = make_response(send_file(svg_filename, mimetype='image/svg+xml'))
+    resp.cache_control.no_cache = True
+    return resp
+
+
 @app.route('/api/m/<machine_name>/connect', methods=['POST'])
 def attempt_to_connect(machine_name):
     result = app.machines[machine_name].setup_comm_port()
     return jsonify({'connected': result})
+
 
 @app.route('/api/m/<machine_name>/page', methods=['GET'])
 def get_page(machine_name):
@@ -105,14 +116,8 @@ def control_acquire(machine_name, command):
     """ Send commands to control the image acquire behaviour: 'run', 'pause'
     """
     result = app.machines[machine_name].control_acquire(command)
-    return jsonify(result)
-
-@app.route('/api/m/<machine_name>/acquire', methods=['GET'])
-def get_loaded_paths(machine_name):
-    """ Returns the paths of the current artwork.
-    """
-    result = app.machines[machine_name].paths
-    return jsonify({'paths': result})
+    code = result.pop('http_code', 200)
+    return jsonify(result), code
 
 
 @app.route('/api/m/<machine_name>/queue/<response_format>', methods=['GET'])

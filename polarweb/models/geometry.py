@@ -18,7 +18,7 @@ class Rectangle():
                 and self.position.y < p.y < (self.size.y + self.position.y)
 
     def __str__(self):
-        return "Rectangle."
+        return u"Rectangle size %s,%s and pos %s,%s" % (self.size.x, self.size.y, self.position.x, self.position.y)
 
 class Layout():
     def __init__(self, extent, design):
@@ -64,6 +64,7 @@ class Layout():
             print "Keys: %s" % self.panels.keys()
             key = self.panels.keys()[k_index]
             self.current_panel_key = key
+            return self.get_current_panel()
 
     def get_current_panel(self):
         if self.current_panel_key:
@@ -83,3 +84,11 @@ class Layout():
 
     def clear_panels(self):
         self.panels.clear()
+
+    def scale_to_panel(self, paths):
+        p = self.get_current_panel()
+        if not p:
+            raise ValueError("No panel was available to scale to.")
+
+        # determine a scaling factor
+

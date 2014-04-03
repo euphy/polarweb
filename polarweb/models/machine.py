@@ -3,7 +3,8 @@ General model of the machine, including its communications route.
 """
 from collections import deque
 from datetime import datetime, time
-from multiprocessing import Process
+import io
+from multiprocessing import Process, Queue
 import os
 from random import randint
 import time
@@ -13,7 +14,7 @@ import thread
 from xml.dom import minidom
 from euclid import Vector2
 from image_grabber.lib.app import ImageGrabber
-from pathfinder import sample_workflow
+from pathfinder import sample_workflow, paths2svg
 from polarweb.models.geometry import Rectangle, Layout
 from serial.tools import list_ports
 
@@ -80,7 +81,10 @@ class Polargraph():
         self.current_page = page
         self.comm_port = comm_port
 
-        self.set_layout(page['extent'], '2x2')
+        self.status = 'waiting_for_new_layout'
+        self.set_layout(page['extent'], '4x4')
+
+        # To do with communications
         self.connected = False
         self.contacted = False
         self.calibrated = False
@@ -90,7 +94,6 @@ class Polargraph():
         self.last_move = None
         self.started_time = datetime.now()
 
-        self.status = 'idle'
 
         self.auto_acquire = False
         self.drawing = False
@@ -106,6 +109,8 @@ class Polargraph():
 
         # Init the serial io
         self.setup_comm_port()
+        drawing_thread = thread.start_new_thread(self.heartbeat, (2,))
+
 
 
     def setup_comm_port(self):
@@ -131,7 +136,7 @@ class Polargraph():
                 l = self.serial.readline().strip('\r\n')
                 self.process_incoming_message(l)
                 received_log.append(l)
-                print "%s. %s" % (len(received_log), l)
+                print "%s: %s. %s" % (self.name, len(received_log), l)
             if freq:
                 time.sleep(freq)
 
@@ -140,14 +145,69 @@ class Polargraph():
             if self.ready and self.queue_running:
                 self.reading = False
                 if outgoing_queue:
+                    self.status = 'running'
                     c = outgoing_queue.popleft()
                     self.serial.write(c+";")
                     print "Writing out: %s" % c
+                    if not outgoing_queue:  # that was the last one
+                        self.status = 'exhausted_queue'
                     self.ready = False
                 self.reading = True
             if freq:
                 time.sleep(freq)
 
+    def heartbeat(self, freq):
+        """
+        Setting status flags, and initiating new actions based on combinations of status flags.
+        """
+        while True:
+            if self.status == 'exhausted_queue':
+                self.layout.remove_current_panel()
+                new_panel = self.layout.use_random_panel()
+                if not new_panel:  # like the last panel was the final one of that layout
+                    self.status = 'waiting_for_new_layout'
+
+            if self.status == 'waiting_for_new_layout':
+                self.queue_running = False
+
+            if self.status == 'idle' \
+                    and self.layout.get_current_panel():
+                # these conditions indicate it's ok to acquire and start
+                print "%s OK TO START A DRAWING!" % self.name
+                self.status = 'acquiring'
+                self.acquire()
+
+            if self.status == 'acquired' \
+                    and self.layout.get_current_panel() \
+                    and self.paths:
+                self.paths = self.layout.scale_to_panel(self.paths)
+                commands = self.build_commands(self.paths)
+
+                print "%s Appending %s commands the the queue." % (self.name, len(commands))
+                self.queue.append(commands)
+
+
+            if freq:
+                time.sleep(freq)
+
+    def run_drawing(self):
+        if self.status == 'idle' \
+                and self.layout.get_current_panel() \
+                and self.paths:
+            # these conditions indicate it's ok to start a drawing!
+            print "%s OK TO START A DRAWING!" % self.name
+            self.paths = self.layout.scale_to_panel(self.paths)
+            commands = self.build_commands(self.paths)
+
+            print "%s Appending %s commands the the queue." % (self.name, len(commands))
+            self.queue.append(commands)
+
+    def get_machine_as_svg(self):
+        filename = os.path.abspath("%s.svg" % self.name)
+        paths2svg(self.paths or {},
+                  self.extent.size, filename, scale=0.2, show_nodes=True)
+
+        return filename
 
     def uptime(self):
         """
@@ -166,32 +226,43 @@ class Polargraph():
                 'last_move': self.last_move,
                 'uptime': self.uptime(),
                 'contacted': self.contacted,
-                'page': self.current_page['name']}
+                'page': self.current_page['name'],
+                'camera_in_use': Polargraph.camera_lock,
+                'paths': self.paths,
+                'status': self.status,
+                'current panel': str(self.layout.get_current_panel().__str__())
+        }
 
     def control_acquire(self, command):
         if command == 'automatic':
             self.auto_acquire = True
-            self.acquire()
         elif command == 'manual':
             self.auto_acquire = False
         elif command == 'now':
-            self.acquire()
+            result = self.state()
+            ac = self.acquire()
+            if ac:
+                result.update(self.acquire())
+
+            return result
 
         return self.state()
 
     def control_drawing(self, command):
         if command == 'run':
+            # if press run, then just use the same layout as last time
+            if self.status == 'waiting_for_new_layout':
+                self.set_layout(self.extent, self.layout.design)
+                self.status = 'idle'
             self.queue_running = True
         elif command == 'pause':
             self.queue_running = False
         elif command == 'cancel_panel':
             self.queue.clear()
-            self.layout.remove_panel()
-            pass
+            self.layout.remove_current_panel()
         elif command == 'cancel_page':
             self.queue.clear()
             self.queue_running = False
-            self.auto_acquire = False
             self.layout.clear_panels()
         elif command == 'reuse_panel':
             self.queue.clear()
@@ -210,25 +281,39 @@ class Polargraph():
         self.queue.append("C48,END")
         return self.state()
 
-    def ac(self):
-        try:
-            grabber = ImageGrabber(debug=True)
-            img_filename = grabber.get_image(filename="png")
-            print "Got %s" % img_filename
+    def ac(self, paths_queue):
+        grabber = ImageGrabber(debug=True)
+        img_filename = grabber.get_image(filename="png")
+        print "Got %s" % img_filename
 
-            paths = sample_workflow.run(input_img=img_filename)
-            self.paths = paths
-        finally:
-            Polargraph.camera_lock = False
+        paths = sample_workflow.run(input_img=img_filename)
+        print paths
+        paths_queue.put(paths)
 
     def acquire(self):
         """  Method that will acquire an image to draw.
         """
+        if Polargraph.camera_lock:
+            print "Camera is locked."
+            return {'http_code': 503}
+
         Polargraph.camera_lock = True
         self.paths = None
-        p = Process(target=self.ac, args=())
+        paths_queue = Queue()
+        p = Process(target=self.ac, args=(paths_queue,))
         p.start()
+        p.join(60)
 
+        self.paths = []
+        paths_queue.put('STOP')
+        for i in iter(paths_queue.get, 'STOP'):
+            self.paths.append(i)
+
+        if self.paths:
+            self.status = 'acquired'
+        else:
+            self.status = 'idle'
+        Polargraph.camera_lock = False
 
     def process_incoming_message(self, command):
         """
@@ -250,6 +335,18 @@ class Polargraph():
         return Vector2(splitted[1], splitted[2])
 
     def set_layout(self, page, layout_name):
-        self.layout = Layout(page, layout_name)
-        self.layout.use_random_panel()
+        if self.status == 'waiting_for_new_layout':
+            self.layout = Layout(page, layout_name)
+            self.layout.use_random_panel()
+            self.status = 'idle'
+
+    def build_commands(self, paths):
+        result = []
+        for p in paths:
+            result.append("C12,%s,END" % p)
+
+        return result
+
+
+
 

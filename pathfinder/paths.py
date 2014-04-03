@@ -133,6 +133,7 @@ def paths2svg(paths, shape, out_file, scale=1, show_nodes=False):
         f.write("</svg>")
 
 
+
 def paths2json(paths, out_file):
     """
     Export paths as a JSON file.
