@@ -122,10 +122,15 @@ class Layout():
             scaling = p.size.y / paths_size[1]
 
         print "Scaling: %s" % scaling
-
         for path_index, path in enumerate(paths):
             for point_index, point in enumerate(path):
                 paths[path_index][point_index] = (point[0]*scaling, point[1]*scaling)
+
+        print "transform: %s" % str(self.extent.position)
+        for path_index, path in enumerate(paths):
+            for point_index, point in enumerate(path):
+                paths[path_index][point_index] = (point[0]+self.extent.position.x,
+                                                  point[1]+self.extent.position.y)
 
 
         return paths

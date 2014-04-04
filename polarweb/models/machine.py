@@ -328,14 +328,14 @@ class Polargraph():
             first = True
             for point in path:
                 if first:
-                    result.append("pen up")
-                    result.append("C99,%.1f,%.1f,END" % (point[0], point[1]))
-                    result.append("pen down")
+                    result.append("C14,0,END")
+                    result.append("C17,%.1f,%.1f,END" % (point[0], point[1]))
+                    result.append("C13,200,END")
                     first = False
                 else:
-                    result.append("C99,%.1f,%.1f,END" % (point[0], point[1]))
+                    result.append("C17,%.1f,%.1f,END" % (point[0], point[1]))
 
-        result.append("pen up")
+        result.append("C14,0,END")
 
         return result
 
