@@ -8,6 +8,7 @@ import numpy
 
 from face import Tracking, Framing
 import image as face_image
+from polarweb.models.Indicator import FlashColourThread
 
 
 class ImageGrabber(object):
@@ -16,6 +17,7 @@ class ImageGrabber(object):
     frame = None
     gray = None
     faces = None
+    last_highest = 0
 
     def __init__(self,
                  debug=False, required_score=15, blur=2,
@@ -57,22 +59,33 @@ class ImageGrabber(object):
             img, self.posterize_levels)
         img = face_image.threshold(img, thresholds)
 
-        if self.debug:
-            cv2.imshow('frame', img)
-            cv2.waitKey(1)
-            # time.sleep(4)
+        # if self.debug:
+        #     cv2.imshow('frame', img)
+        #     cv2.waitKey(1)
+        #     # time.sleep(4)
 
         return img
 
-    def get_image(self, filename=None):
+    def get_image(self, filename=None, rgb_ind=None):
+        self.last_highest = 0
+        indicator_thread = None
+        if rgb_ind:
+            indicator_thread = FlashColourThread(rgb_ind, 'orange', 0.2, 'black', 2)
+            indicator_thread.start()
+
         if self.debug:
             print "Obtaining face lock..."
 
-        self._wait_for_face_lock()
+        self._wait_for_face_lock(indicator_thread=indicator_thread)
+        if indicator_thread:
+            indicator_thread.stop()
 
         if self.debug:
             print "Face lock obtained"
 
+        if rgb_ind:
+            indicator_thread = FlashColourThread(rgb_ind, 'green', 4, num_of_flashes=1)
+            indicator_thread.start()
         image = self._isolate_face()
         self.close()
 
@@ -80,6 +93,8 @@ class ImageGrabber(object):
             filename = self.save_image_as_file(image, filename)
             return filename
 
+        if indicator_thread:
+            indicator_thread.stop()
         return image
 
 
@@ -158,8 +173,16 @@ class ImageGrabber(object):
 
         return self.frame
 
-    def _wait_for_face_lock(self):
+    def _wait_for_face_lock(self, indicator_thread=None):
         while True:
+            if not hasattr(self, 'faces') or self.faces == None or len(self.faces) == 0:
+                indicator_thread.change_pattern('green', 0.5, 'black', 1.5)
+                self.last_highest = 0
+            else:
+                diff = self.tracking.score_max - self.last_highest
+                print "Diff: %s" % diff
+                diff = diff / 20.0
+                indicator_thread.change_pattern((0, 20, 0), diff, (50, 50, 0), diff)
             self._capture_frame()
             # time.sleep(1)
 
@@ -184,5 +207,7 @@ class ImageGrabber(object):
 
     def _face_lock_obtained(self):
         for face in self.tracking.evidence.values():
+            self.last_highest = face['score'] if face['score'] > self.last_highest else self.last_highest
             if face['score'] == self.tracking.score_max:
                 return True
+        return False

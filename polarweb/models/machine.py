@@ -15,6 +15,7 @@ from xml.dom import minidom
 from euclid import Vector2
 from image_grabber.lib.app import ImageGrabber
 from pathfinder import sample_workflow, paths2svg
+from polarweb.models.Indicator import AcquireIndicator
 from polarweb.models.geometry import Rectangle, Layout
 from serial.tools import list_ports
 
@@ -25,47 +26,30 @@ class Machines(dict):
         self.__dict__ = self
 
         self.list_ports()
+        self['rgb_ind'] = AcquireIndicator()
 
         m1 = Polargraph("left",
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
                               'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
-                        comm_port="COM3")
+                        comm_port="COM3",
+                        rgb_ind=self['rgb_ind'])
         m2 = Polargraph("right",
                         Rectangle(Vector2(305, 450), Vector2(0, 0)),
                         page={'name': 'A4',
                               'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
-                        comm_port="COM18")
+                        comm_port="COM18",
+                        rgb_ind=self['rgb_ind'])
 
         self[m1.name] = m1
         self[m2.name] = m2
         self.machine_names = [m1.name, m2.name]
-
-        self['indicator'] = AcquireIndicator(comm_port="COM7")
 
 
     def list_ports(self):
         self.ports = list(list_ports.comports())
         print "Com ports: %s" % self.ports
         return self.ports
-
-class AcquireIndicator():
-    def __init__(self, comm_port):
-        self.comm_port = comm_port
-
-    def setColour(self, r, g, b):
-        pass
-
-class PolargraphImageGetter():
-    """
-    Off-line implementation of the image getter. The PIG. See.
-    """
-    def __init__(self):
-        pass
-
-
-    def get(self, key=None):
-        pass
 
 
 class Polargraph():
@@ -75,11 +59,12 @@ class Polargraph():
 
     camera_lock = False
 
-    def __init__(self, name, extent, page, comm_port=None):
+    def __init__(self, name, extent, page, comm_port=None, rgb_ind=None):
         self.name = name
         self.extent = extent
         self.current_page = page
         self.comm_port = comm_port
+        self.rgb_ind = rgb_ind
 
         self.status = 'waiting_for_new_layout'
         self.set_layout(page['extent'], '4x4')
@@ -105,10 +90,12 @@ class Polargraph():
         self.received_log = deque()
         self.reading = False
 
-        self.paths = PolargraphImageGetter().get('../svg_samples/pg-eisf.svg')
+        self.paths = None
 
         # Init the serial io
         self.setup_comm_port()
+
+        # and the event heartbeat
         drawing_thread = thread.start_new_thread(self.heartbeat, (2,))
 
 
@@ -286,13 +273,12 @@ class Polargraph():
 
     def ac(self, paths_queue):
         grabber = ImageGrabber(debug=True)
-        img_filename = grabber.get_image(filename="png")
+        img_filename = grabber.get_image(filename="png", rgb_ind=self.rgb_ind)
         print "Got %s" % img_filename
 
-        paths = sample_workflow.run(input_img=img_filename)
+        paths = sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind)
         print paths
-        for i in paths:
-            paths_queue.put(i)
+        paths_queue.put(paths)
 
     def acquire(self):
         """  Method that will acquire an image to draw.
@@ -304,9 +290,11 @@ class Polargraph():
         Polargraph.camera_lock = True
         self.paths = None
         paths_queue = Queue()
-        p = Process(target=self.ac, args=(paths_queue,))
-        p.start()
-        p.join(120)
+
+        # p = Process(target=self.ac, args=(paths_queue,))
+        # p.start()
+        # p.join(60)
+        self.ac(paths_queue)
 
         self.paths = []
         paths_queue.put('STOP')
@@ -345,20 +333,10 @@ class Polargraph():
             self.status = 'idle'
 
     def build_commands(self, paths):
-        print paths
         result = []
+        for p in paths:
+            result.append("C12,%s,END" % p)
 
-        if paths:
-            for path in paths:
-                first_point = True
-                for point in path:
-                    if first_point:
-                        result.append("pen up")
-                        result.append("C12,%s,%s,END" % (point[0], point[1]))
-                        result.append("pen down")
-                        first_point = False
-                    else:
-                        result.append("C12,%s,%s,END" % (point[0], point[1]))
         return result
 
 

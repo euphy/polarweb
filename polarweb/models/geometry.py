@@ -76,7 +76,9 @@ class Layout():
         return self.current_panel_key
 
     def remove_current_panel(self):
-        return self.remove_panel(self.current_panel_key)
+        self.remove_panel(self.current_panel_key)
+        self.current_panel_key = None
+        return
 
     def remove_panel(self, key):
         panel = self.panels.pop(key, None)

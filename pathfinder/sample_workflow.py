@@ -1,10 +1,13 @@
 import os
+from threading import Thread
 from PIL import Image
 
 import numpy
 import time
+import thread
 
 from paths import build_graph, build_paths, filter_paths, paths2svg, paths2json
+from polarweb.models.Indicator import FlashColourThread
 from smoothing import apply_box_smoothing
 from decimation import subsampling_decimation, anchor_angle_error, \
     right_angled_area_error, max_divergence_error, total_divergence_error
@@ -14,9 +17,16 @@ def run(input_img='./sampleinput.png',
         min_path_len=20,
         max_path_count=100,
         smoothing_levels=3,
-        scale=3):
+        scale=3,
+        rgb_ind=None):
     tic = time.clock()
     start_tic = tic
+
+    indicator_thread = None
+    if rgb_ind:
+        indicator_thread = FlashColourThread(rgb_ind, 'orange', 0.5, 'red', 0.5)
+        indicator_thread.start()
+
     # Load image data as bitmap matrix
     image = Image.open(input_img)
     imdata = numpy.asarray(image, dtype=numpy.uint8)
@@ -63,5 +73,8 @@ def run(input_img='./sampleinput.png',
     tic = time.clock()
     print "Saved JSON (%s) in %s" % (json_filename, (tic - toc))
     print "Path detection completed in %s" % (tic - start_tic)
+
+    if indicator_thread:
+        indicator_thread.stop()
 
     return paths
