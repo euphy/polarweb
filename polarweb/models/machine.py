@@ -171,7 +171,7 @@ class Polargraph():
                 commands = self.build_commands(self.paths)
 
                 print "%s Appending %s commands the the queue." % (self.name, len(commands))
-                self.queue.append(commands)
+                self.queue.extend(commands)
 
                 if self.queue:
                     self.status = "serving"
@@ -183,7 +183,7 @@ class Polargraph():
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
         paths2svg(self.paths or {},
-                  self.extent.size, filename, scale=0.2, show_nodes=True)
+                  self.extent.size, filename, scale=0.5, show_nodes=True, outline=True)
 
         return filename
 
@@ -273,7 +273,8 @@ class Polargraph():
         """  Method that will acquire an image to draw.
         """
         if Polargraph.camera_lock:
-            print "Camera is locked."
+            print "Camera is locked. Cancelling. But come back later please!"
+            self.status = 'idle'
             return {'http_code': 503}
 
         Polargraph.camera_lock = True
@@ -328,11 +329,11 @@ class Polargraph():
             for point in path:
                 if first:
                     result.append("pen up")
-                    result.append("C27,%.1f,%.1f,END" % (point[0], point[1]))
+                    result.append("C99,%.1f,%.1f,END" % (point[0], point[1]))
                     result.append("pen down")
                     first = False
                 else:
-                    result.append("C27,%.1f,%.1f,END" % (point[0], point[1]))
+                    result.append("C99,%.1f,%.1f,END" % (point[0], point[1]))
 
         return result
 

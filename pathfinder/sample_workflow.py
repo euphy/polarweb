@@ -65,7 +65,7 @@ def run(input_img='./sampleinput.png',
     svg_filename = name + '.svg'
     json_filename = name + '.json'
 
-    paths2svg(paths, image.size, svg_filename, scale=scale, show_nodes=False)
+    paths2svg(paths, image.size, svg_filename, scale=scale, show_nodes=False, outline=True)
     toc = time.clock()
     print "Saved SVG (%s) in %s" % (svg_filename, (toc - tic))
 

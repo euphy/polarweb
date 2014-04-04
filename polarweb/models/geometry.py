@@ -20,6 +20,13 @@ class Rectangle():
     def __str__(self):
         return u"Rectangle size %s,%s and pos %s,%s" % (self.size.x, self.size.y, self.position.x, self.position.y)
 
+    def height_to_width(self):
+        if self.size.x != 0.0:
+            return self.size.y / self.size.x
+        else:
+            return 1.0
+
+
 class Layout():
     def __init__(self, extent, design):
         self.extent = extent
@@ -93,5 +100,11 @@ class Layout():
             raise ValueError("No panel was available to scale to.")
 
         # determine a scaling factor
+
+        panel_ratio = p.height_to_width()
+        paths_ratio = paths
+
+
+
         return paths
 

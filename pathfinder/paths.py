@@ -106,7 +106,7 @@ def filter_paths(paths, min_length=0, max_paths=0):
     return paths
 
 
-def paths2svg(paths, shape, out_file, scale=1, show_nodes=False):
+def paths2svg(paths, shape, out_file, scale=1, show_nodes=False, outline=False):
     """
     Write an svg file to preview the paths.
     """
@@ -115,6 +115,14 @@ def paths2svg(paths, shape, out_file, scale=1, show_nodes=False):
         shape = (shape[0]*scale, shape[1]*scale)
         f.write(("<svg width=\"%dpx\" height=\"%dpx\" version=\"1.1\" " +
                  "xmlns=\"http://www.w3.org/2000/svg\">") % shape)
+
+        if outline:
+            f.write("<path d=\"M%d %d" % (0, 0))
+            f.write(" L%s %s" % (shape[0]*scale, 0))
+            f.write(" L%s %s" % (shape[0]*scale, shape[1]*scale))
+            f.write(" L%s %s" % (0, shape[1]*scale))
+            f.write(" L%s %s" % (0,0))
+            f.write("\" stroke-width=\"5\" stroke=\"#000\" fill=\"#DDD\"/>")
 
         # draw a black line for each edge
         for path in paths:
