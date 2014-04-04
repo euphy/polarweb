@@ -7,3 +7,4 @@ flask-assets
 jsmin
 pillow
 pyusb
+webcolors
