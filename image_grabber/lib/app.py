@@ -33,7 +33,7 @@ class ImageGrabber(object):
             os.path.join(path, '../resource/haarcascade_frontalface_default.xml'))
 
         self.camera = cv2.VideoCapture(0)
-        self.set_resolution(640, 480)
+        self.set_resolution(1200, 480)
 
         self.tracking = Tracking()
         self.tracking.score_max = required_score
@@ -106,7 +106,7 @@ class ImageGrabber(object):
         # for row in image_array:
         #     print row
         im = Image.fromarray(image_array)
-        im.show()
+        #im.show()
 
         _, ext = os.path.splitext(filename)
         if not ext:

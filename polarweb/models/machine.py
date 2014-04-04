@@ -143,6 +143,9 @@ class Polargraph():
             if freq:
                 time.sleep(freq)
 
+
+
+
     def heartbeat(self, freq):
         """
         Setting status flags, and initiating new actions based on combinations of status flags.
@@ -160,9 +163,10 @@ class Polargraph():
             if self.status == 'idle' \
                     and self.layout.get_current_panel():
                 # these conditions indicate it's ok to acquire and start
-                print "%s OK TO START A DRAWING!" % self.name
-                self.status = 'acquiring'
-                self.acquire()
+                if self.auto_acquire:
+                    print "%s OK TO START A DRAWING!" % self.name
+                    self.status = 'acquiring'
+                    self.acquire()
 
             if self.status == 'acquired' \
                     and self.layout.get_current_panel() \
@@ -199,6 +203,7 @@ class Polargraph():
 
     def state(self):
         return {'name': self.name,
+                'status': self.status,
                 'calibrated': self.calibrated,
                 'ready': self.ready,
                 'last_move': self.last_move,
@@ -207,7 +212,6 @@ class Polargraph():
                 'page': self.current_page['name'],
                 'camera_in_use': Polargraph.camera_lock,
                 'paths': self.paths,
-                'status': self.status,
                 'current panel': str(self.layout.get_current_panel().__str__())
         }
 
