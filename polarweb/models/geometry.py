@@ -1,4 +1,5 @@
 from random import randint
+import numpy
 
 __author__ = 'sandy_000'
 
@@ -101,10 +102,42 @@ class Layout():
 
         # determine a scaling factor
 
-        panel_ratio = p.height_to_width()
-        paths_ratio = numpy.amax(paths)
+        paths_size = Layout.get_path_size(paths)
+        print "Paths size: %s" % str(paths_size)
 
+        for path_index, path in enumerate(paths):
+            for point_index, point in enumerate(path):
+                paths[path_index][point_index] = (float(point[0]), float(point[1]))
+
+
+        panel_ratio = p.height_to_width()
+        paths_ratio = paths_size[1] / paths_size[0]
+
+        print "Panel ratio: %s" % panel_ratio
+        print "Paths ratio: %s" % paths_ratio
+
+        if panel_ratio > paths_ratio:
+            scaling = p.size.x / paths_size[0]
+        else:
+            scaling = p.size.y / paths_size[1]
+
+        print "Scaling: %s" % scaling
+
+        for path_index, path in enumerate(paths):
+            for point_index, point in enumerate(path):
+                paths[path_index][point_index] = (point[0]*scaling, point[1]*scaling)
 
 
         return paths
 
+    @classmethod
+    def get_path_size(cls, paths):
+        x_max = 0
+        y_max = 0
+
+        for path in paths:
+            for point in path:
+                if point[0] > x_max: x_max = point[0]
+                if point[1] > y_max: y_max = point[1]
+
+        return (x_max, y_max)

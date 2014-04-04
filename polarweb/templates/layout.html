@@ -105,7 +105,7 @@
                         setInterval(function() { $('#state-{{machine_name}}').load('api/m/{{machine_name}}');
                          $('#queue-{{machine_name}}').load('api/m/{{machine_name}}/queue/html');
                          $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');
-                         }, 1500);
+                         }, 5000);
                     </script>
                     <p>Connected: <span id="connected-{{machine_name}}">{{machines[machine_name].connected}}</span></p>
                     <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/connect', function(data){

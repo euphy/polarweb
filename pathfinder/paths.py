@@ -1,5 +1,6 @@
 import numpy
 import json
+from polarweb.models.geometry import Layout
 
 
 def build_graph(imdata):
@@ -116,9 +117,8 @@ def paths2svg(paths, shape, out_file, scale=1, show_nodes=False, outline=False):
         f.write(("<svg width=\"%dpx\" height=\"%dpx\" version=\"1.1\" " +
                  "xmlns=\"http://www.w3.org/2000/svg\">") % shape)
 
-        size = numpy.amax(paths)
-
         if outline:
+            size = Layout.get_path_size(paths)
             f.write("<path d=\"M%d %d" % (0, 0))
             f.write(" L%s %s" % (size[0]*scale, 0))
             f.write(" L%s %s" % (size[0]*scale, size[1]*scale))
