@@ -40,7 +40,12 @@ Core:
 * flask
 * flask-assets
 * jsmin
+
 http://pyserial.sourceforge.net/
+
+Indicator (Digispark RGB LED)
+* Arduino
+* PyUSB
 
 Image Grabber:
 * OpenCV 2.* (cv2)
