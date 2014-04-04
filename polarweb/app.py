@@ -12,13 +12,13 @@ assets = Environment(app)
 
 js = Bundle('../bower_components/jquery/dist/jquery.js',
             '../bower_components/bootstrap/dist/js/bootstrap.js',
-            # filters='jsmin',
             output='packed.js')
 assets.register('js_all', js)
 
 css = Bundle('../bower_components/bootstrap/dist/css/bootstrap.css',
-             output='bootstrap.css')
-assets.register('bootstrap', css)
+             '../templates/polarweb.css',
+             output='polarweb.css')
+assets.register('polarweb_css', css)
 
 app.debug = True
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'

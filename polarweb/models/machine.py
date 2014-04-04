@@ -180,18 +180,6 @@ class Polargraph():
             if freq:
                 time.sleep(freq)
 
-    def run_drawing(self):
-        if self.status == 'idle' \
-                and self.layout.get_current_panel() \
-                and self.paths:
-            # these conditions indicate it's ok to start a drawing!
-            print "%s OK TO START A DRAWING!" % self.name
-            self.paths = self.layout.scale_to_panel(self.paths)
-            commands = self.build_commands(self.paths)
-
-            print "%s Appending %s commands the the queue." % (self.name, len(commands))
-            self.queue.append(commands)
-
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
         paths2svg(self.paths or {},
@@ -278,7 +266,8 @@ class Polargraph():
 
         paths = sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind)
         print paths
-        paths_queue.put(paths)
+        for p in paths:
+            paths_queue.put(p)
 
     def acquire(self):
         """  Method that will acquire an image to draw.
@@ -339,11 +328,11 @@ class Polargraph():
             for point in path:
                 if first:
                     result.append("pen up")
-                    result.append("C27,%.2f,%.2f,END" % (point[0], point[1]))
+                    result.append("C27,%.1f,%.1f,END" % (point[0], point[1]))
                     result.append("pen down")
                     first = False
                 else:
-                    result.append("C27,%.2f,%.2f,END" % (point[0], point[1]))
+                    result.append("C27,%.1f,%.1f,END" % (point[0], point[1]))
 
         return result
 

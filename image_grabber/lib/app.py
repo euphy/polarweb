@@ -182,7 +182,7 @@ class ImageGrabber(object):
                 diff = self.tracking.score_max - self.last_highest
                 print "Diff: %s" % diff
                 diff = diff / 20.0
-                indicator_thread.change_pattern((0, 20, 0), diff, (50, 50, 0), diff)
+                indicator_thread.change_pattern('blue', diff, 'fuchsia', diff)
             self._capture_frame()
             # time.sleep(1)
 
