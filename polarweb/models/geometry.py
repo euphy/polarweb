@@ -102,7 +102,7 @@ class Layout():
         # determine a scaling factor
 
         panel_ratio = p.height_to_width()
-        paths_ratio = paths
+        paths_ratio = numpy.amax(paths)
 
 
 

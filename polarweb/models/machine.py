@@ -335,6 +335,8 @@ class Polargraph():
                 else:
                     result.append("C99,%.1f,%.1f,END" % (point[0], point[1]))
 
+        result.append("pen up")
+
         return result
 
 

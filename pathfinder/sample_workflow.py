@@ -60,7 +60,6 @@ def run(input_img='./sampleinput.png',
     tic = time.clock()
     print "Final filter in %s" % (tic - toc)
 
-
     name, ext = os.path.splitext(input_img)
     svg_filename = name + '.svg'
     json_filename = name + '.json'

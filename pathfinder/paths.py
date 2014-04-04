@@ -116,13 +116,16 @@ def paths2svg(paths, shape, out_file, scale=1, show_nodes=False, outline=False):
         f.write(("<svg width=\"%dpx\" height=\"%dpx\" version=\"1.1\" " +
                  "xmlns=\"http://www.w3.org/2000/svg\">") % shape)
 
+        size = numpy.amax(paths)
+
         if outline:
             f.write("<path d=\"M%d %d" % (0, 0))
-            f.write(" L%s %s" % (shape[0]*scale, 0))
-            f.write(" L%s %s" % (shape[0]*scale, shape[1]*scale))
-            f.write(" L%s %s" % (0, shape[1]*scale))
-            f.write(" L%s %s" % (0,0))
-            f.write("\" stroke-width=\"5\" stroke=\"#000\" fill=\"#DDD\"/>")
+            f.write(" L%s %s" % (size[0]*scale, 0))
+            f.write(" L%s %s" % (size[0]*scale, size[1]*scale))
+            f.write(" L%s %s" % (0, size[1]*scale))
+            f.write(" L%s %s" % (0, 0))
+            f.write("\" stroke-width=\"5\" stroke=\"#F00\" fill=\"#DDD\"/>")
+
 
         # draw a black line for each edge
         for path in paths:
@@ -139,8 +142,6 @@ def paths2svg(paths, shape, out_file, scale=1, show_nodes=False, outline=False):
                     f.write(("<circle cx=\"%d\" cy=\"%d\" r=\"%d\" " +
                              "stroke=\"none\" fill=\"red\" />") % params)
         f.write("</svg>")
-
-
 
 def paths2json(paths, out_file):
     """
