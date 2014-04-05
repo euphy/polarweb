@@ -32,13 +32,13 @@ class Machines(dict):
                         Rectangle(Vector2(705, 980), Vector2(0, 0)),
                         page={'name': 'A1',
                               'extent': Rectangle(Vector2(594, 837), Vector2(61, 85))},
-                        comm_port="COM3",
+                        comm_port="COM6",
                         rgb_ind=self['rgb_ind'])
         m2 = Polargraph("right",
                         Rectangle(Vector2(705, 980), Vector2(0, 0)),
                         page={'name': 'A1',
                               'extent': Rectangle(Vector2(594, 837), Vector2(61, 85))},
-                        comm_port="COM18",
+                        comm_port="COM4",
                         rgb_ind=self['rgb_ind'])
 
         self[m1.name] = m1
@@ -86,7 +86,7 @@ class Polargraph():
         self.position = None
 
         self.serial = None
-        self.queue = deque(['C17,400,400,END'])
+        self.queue = deque(['C17,400,400,10,END'])
         self.received_log = deque()
         self.reading = False
 
@@ -106,7 +106,7 @@ class Polargraph():
             self.connected = True
             self.reading = True
             print "Connected successfully to %s (%s)." % (self.comm_port, self.serial)
-            thread.start_new_thread(self._read_line, (None, self.received_log))
+            thread.start_new_thread(self._read_line, (None, self.received_log, self))
             thread.start_new_thread(self._write_line, (None, self.queue))
             return True
 
@@ -117,12 +117,15 @@ class Polargraph():
             self.serial = None
             return False
 
-    def _read_line(self, freq, received_log):
+    def _read_line(self, freq, received_log, parent):
+
         while True:
             if self.reading:
                 l = self.serial.readline().strip('\r\n')
-                self.process_incoming_message(l)
+                self.process_incoming_message(l, parent)
                 received_log.append(l)
+                if len(received_log) > 200:
+                    received_log.popleft()
                 print "%s: %s. %s" % (self.name, len(received_log), l)
             if freq:
                 time.sleep(freq)
@@ -137,7 +140,7 @@ class Polargraph():
                     self.serial.write(c+";")
                     print "Writing out: %s" % c
                     if not outgoing_queue:  # that was the last one
-                        self.status = 'exhausted_queue'
+                        self.status = 'idle'
                     self.ready = False
                 self.reading = True
             if freq:
@@ -150,6 +153,7 @@ class Polargraph():
         """
         Setting status flags, and initiating new actions based on combinations of status flags.
         """
+        print "%s Status: %s" % (self.name, self.status)
         while True:
             if self.status == 'exhausted_queue':
                 self.layout.remove_current_panel()
@@ -310,7 +314,7 @@ class Polargraph():
             self.status = 'idle'
         Polargraph.camera_lock = False
 
-    def process_incoming_message(self, command):
+    def process_incoming_message(self, command, parent):
         """
         Receives messages from the machine and deals with them. This will involve:
         * raising errors
@@ -318,11 +322,11 @@ class Polargraph():
         * setting status
         """
         if 'READY_300' in command:
-            self.contacted = True
-            self.ready = True
+            parent.contacted = True
+            parent.ready = True
         elif 'CARTESIAN' in command:
-            self.calibrated = True
-            self.position = Polargraph.unpack_sync(command)
+            parent.calibrated = True
+            parent.position = Polargraph.unpack_sync(command)
 
     @classmethod
     def unpack_sync(cls, command):
@@ -342,16 +346,27 @@ class Polargraph():
 
     def build_commands(self, paths):
         result = []
-        for path in paths:
+        p = self.layout.get_current_panel()
+        perimeter = [(p.position.x, p.position.y),
+                     (p.position.x+p.size.x, p.position.y),
+            (p.position.x+p.size.x, p.position.y+p.size.y),
+            (p.position.x, p.position.y+p.size.y),
+            (p.position.x, p.position.y)]
+
+        ps = [perimeter]
+        ps.extend(paths)
+
+
+        for path in ps:
             first = True
             for point in path:
                 if first:
                     result.append("C14,0,END")
-                    result.append("C17,%.1f,%.1f,END" % (point[0], point[1]))
+                    result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
                     result.append("C13,200,END")
                     first = False
                 else:
-                    result.append("C17,%.1f,%.1f,END" % (point[0], point[1]))
+                    result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
 
         result.append("C14,0,END")
 

@@ -32,8 +32,8 @@ class ImageGrabber(object):
         self.face_cascade = cv2.CascadeClassifier(
             os.path.join(path, '../resource/haarcascade_frontalface_default.xml'))
 
-        self.camera = cv2.VideoCapture(0)
-        self.set_resolution(1920, 1080)
+        self.camera = cv2.VideoCapture(1)
+        self.set_resolution(640, 480)
 
         self.tracking = Tracking()
         self.tracking.score_max = required_score
