@@ -56,14 +56,14 @@ class Layout():
         for row in range(0, vertical_divider):
             for col in range(0, horizontal_divider):
                 pos = Vector2(col*panel_width, row*panel_height)
-                panel = Rectangle(size=panel_size, position=pos+origin)
+                panel = Rectangle(size=Vector2(panel_size.x, panel_size.y), position=pos+origin)
                 panels[(col, row)] = panel
 
-        # for key in panels.keys():
-        #     panels[key].size.x = panels[key].size.x - 4
-        #     panels[key].size.y = panels[key].size.y - 4
-        #     panels[key].position.x += 2
-        #     panels[key].position.y += 2
+        for key in panels.keys():
+            panels[key].size.x = panels[key].size.x - 12
+            panels[key].size.y = panels[key].size.y - 12
+            panels[key].position.x += 6
+            panels[key].position.y += 6
 
         return panels
 
@@ -153,3 +153,11 @@ class Layout():
                 if point[1] > y_max: y_max = point[1]
 
         return (x_max, y_max)
+
+    def panels_left(self):
+        num = len(self.panels)
+        if self.get_current_panel_key() and self.get_current_panel_key() in self.panels.keys():
+            num -= 1
+
+        return num
+

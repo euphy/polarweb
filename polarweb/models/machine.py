@@ -153,48 +153,82 @@ class Polargraph():
         """
         Setting status flags, and initiating new actions based on combinations of status flags.
         """
-        print "%s Status: %s" % (self.name, self.status)
+        print '%s Status: %s' % (self.name, self.status)
         while True:
-            if self.status == 'exhausted_queue':
-                self.layout.remove_current_panel()
-                new_panel = self.layout.use_random_panel()
-                if not new_panel:  # like the last panel was the final one of that layout
-                    self.status = 'waiting_for_new_layout'
+            try:
+                if self.status == 'idle':
+                    if self.auto_acquire:
+                        if self.layout.panels_left() > 0:
+                            # acquire and use a new panel if successful
+                            self.status = 'acquiring'
+                        else:
+                            # no panels left,
+                            self.status = 'waiting_for_new_layout'
 
-            if self.status == 'waiting_for_new_layout':
-                self.queue_running = False
-
-            if self.status == 'idle' \
-                    and self.layout.get_current_panel():
-                # these conditions indicate it's ok to acquire and start
-                if self.auto_acquire:
-                    print "%s OK TO START A DRAWING!" % self.name
-                    self.status = 'acquiring'
+                elif self.status == 'acquiring':
                     self.acquire()
 
-            if self.status == 'acquired' \
-                    and self.layout.get_current_panel() \
-                    and self.paths:
-                try:
-                    self.paths = self.layout.scale_to_panel(self.paths)
-                    commands = self.build_commands(self.paths)
-                    print "%s Appending %s commands the the queue." % (self.name, len(commands))
-                    self.queue.extend(commands)
-                except ValueError:
-                    print "%s Problem scaling paths to the panel."
-                    self.paths = None
-                    self.queue.clear()
+                elif self.status == 'acquired':
+                    if not self.paths:
+                        self.status = 'idle'
+                        raise ValueError('Paths were not found, although status is acquired')
 
-                if self.queue:
-                    self.status = "serving"
+                    # find a new panel for this artwork
                     self.layout.remove_current_panel()
+                    new_panel = self.layout.use_random_panel()
+                    if not new_panel:
+                        # No new panels! Need to wait for a whole new layout.
+                        self.status = 'waiting_for_new_layout'
+                        raise ValueError("There's a new panel")
+
+                    # new panel is available, hooray
+                    try:
+                        self.paths = self.layout.scale_to_panel(self.paths)
+                        commands = self.build_commands(self.paths)
+                        print '%s Appending %s commands to the queue.' % (self.name, len(commands))
+                        self.queue.extend(commands)
+                        if self.queue:
+                            self.status = 'serving'
+                        else:
+                            self.status = 'idle'
+
+                    except ValueError:
+                        self.paths = None
+                        self.queue.clear()
+                        self.layout.clear_panels()
+                        self.status = 'waiting_for_new_layout'
+                        raise
+
+                elif self.status == 'waiting_for_new_layout':
+                    self.queue_running = False
+
+            except ValueError:
+                pass
 
             if freq:
                 time.sleep(freq)
 
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
-        paths2svg(self.paths or {},
+        paths2svg(self.paths or [],
+                  self.extent.size, filename, scale=1.0, show_nodes=True, outline=True,
+                  page=self.layout.extent, panel=self.layout.get_current_panel())
+
+        return filename
+
+    def get_available_panels_as_svg(self):
+        filename = os.path.abspath("%s-layout.svg" % self.name)
+        panel_paths = list()
+        for p in self.layout.panels.values():
+            path = list()
+            path.append((p.position.x+6, p.position.y+6))
+            path.append((p.position.x+p.size.x-12, p.position.y+6))
+            path.append((p.position.x+p.size.x-12, p.position.y+p.size.y-12))
+            path.append((p.position.x+6, p.position.y+p.size.y-12))
+            path.append((p.position.x+6, p.position.y+6))
+            panel_paths.append(path)
+
+        paths2svg(panel_paths or [],
                   self.extent.size, filename, scale=1.0, show_nodes=True, outline=True,
                   page=self.layout.extent, panel=self.layout.get_current_panel())
 
@@ -242,7 +276,6 @@ class Polargraph():
 
     def control_drawing(self, command):
         if command == 'run':
-            # if press run, then just use the same layout as last time
             if self.status == 'waiting_for_new_layout':
                 self.set_layout(self.extent, self.layout.design)
                 self.status = 'idle'
@@ -253,14 +286,17 @@ class Polargraph():
             self.queue.clear()
             self.queue.append("C14,0,END")  # pen lift
             self.layout.remove_current_panel()
-
+            self.status = 'idle'
         elif command == 'cancel_page':
             self.queue.clear()
             self.queue_running = False
             self.layout.clear_panels()
+            self.queue.append("C14,0,END")  # pen lift
             self.status = 'waiting_for_layout'
         elif command == 'reuse_panel':
             self.queue.clear()
+            self.layout.current_panel_key = None
+            self.status = 'idle'
 
         return self.state()
 
@@ -276,41 +312,27 @@ class Polargraph():
         self.queue.append("C48,END")
         return self.state()
 
-    def ac(self, paths_queue):
-        grabber = ImageGrabber(debug=True)
-        img_filename = grabber.get_image(filename="png", rgb_ind=self.rgb_ind)
-        print "Got %s" % img_filename
-
-        paths = sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind)
-        print paths
-        for p in paths:
-            paths_queue.put(p)
-
     def acquire(self):
         """  Method that will acquire an image to draw.
         """
         if Polargraph.camera_lock:
-            print "Camera is locked. Cancelling. But come back later please!"
+            print "Camera is locked. Cancelling. But do try again please!"
             self.status = 'idle'
             return {'http_code': 503}
 
         Polargraph.camera_lock = True
-        self.paths = None
-        paths_queue = Queue()
+        self.paths = list()
 
-        # p = Process(target=self.ac, args=(paths_queue,))
-        # p.start()
-        # p.join(60)
-        self.ac(paths_queue)
+        grabber = ImageGrabber(debug=True)
+        img_filename = grabber.get_image(filename="png", rgb_ind=self.rgb_ind)
+        print "Got %s" % img_filename
 
-        self.paths = []
-        paths_queue.put('STOP')
-        for i in iter(paths_queue.get, 'STOP'):
-            self.paths.append(i)
+        self.paths.append(sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind)[0])
 
         if self.paths:
             self.status = 'acquired'
         else:
+            print "That attempt to acquire didn't seem to result in any paths."
             self.status = 'idle'
         Polargraph.camera_lock = False
 
@@ -321,12 +343,16 @@ class Polargraph():
         * confirmations of updates
         * setting status
         """
-        if 'READY_300' in command:
-            parent.contacted = True
-            parent.ready = True
-        elif 'CARTESIAN' in command:
-            parent.calibrated = True
-            parent.position = Polargraph.unpack_sync(command)
+        try:
+            print "Processing incoming message."
+            if 'READY_300' in command:
+                parent.contacted = True
+                parent.ready = True
+            elif 'CARTESIAN' in command:
+                parent.calibrated = True
+                parent.position = Polargraph.unpack_sync(command)
+        except:
+            pass
 
     @classmethod
     def unpack_sync(cls, command):

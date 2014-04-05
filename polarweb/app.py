@@ -89,6 +89,13 @@ def get_layout(machine_name):
     print app.machines[machine_name].current_layout['name']
     return jsonify({'name': app.machines[machine_name].current_layout['name']})
 
+@app.route('/api/m/<machine_name>/layout/svg', methods=['GET'])
+def get_layout_svg(machine_name):
+    svg_filename = app.machines[machine_name].get_available_panels_as_svg()
+    resp = make_response(send_file(svg_filename, mimetype='image/svg+xml'))
+    resp.cache_control.no_cache = True
+    return resp
+
 
 @app.route('/api/m/<machine_name>/layout/<layout_name>', methods=['POST'])
 def set_layout(machine_name, layout_name):
