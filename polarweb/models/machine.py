@@ -29,15 +29,15 @@ class Machines(dict):
         self['rgb_ind'] = AcquireIndicator()
 
         m1 = Polargraph("left",
-                        Rectangle(Vector2(305, 450), Vector2(0, 0)),
-                        page={'name': 'A4',
-                              'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
+                        Rectangle(Vector2(705, 980), Vector2(0, 0)),
+                        page={'name': 'A1',
+                              'extent': Rectangle(Vector2(594, 837), Vector2(150, 85))},
                         comm_port="COM3",
                         rgb_ind=self['rgb_ind'])
         m2 = Polargraph("right",
-                        Rectangle(Vector2(305, 450), Vector2(0, 0)),
-                        page={'name': 'A4',
-                              'extent': Rectangle(Vector2(210, 297), Vector2(55, 60))},
+                        Rectangle(Vector2(705, 980), Vector2(0, 0)),
+                        page={'name': 'A1',
+                              'extent': Rectangle(Vector2(594, 837), Vector2(150, 85))},
                         comm_port="COM18",
                         rgb_ind=self['rgb_ind'])
 
@@ -187,7 +187,7 @@ class Polargraph():
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
         paths2svg(self.paths or {},
-                  self.extent.size, filename, scale=0.5, show_nodes=True, outline=True)
+                  self.extent.size, filename, scale=1.0, show_nodes=True, outline=True, page=self.layout.extent)
 
         return filename
 

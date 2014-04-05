@@ -72,6 +72,7 @@ class Layout():
             print "Keys: %s" % self.panels.keys()
             key = self.panels.keys()[k_index]
             self.current_panel_key = key
+            print "Using key: %s, which is %s" % (key, self.get_current_panel())
             return self.get_current_panel()
 
     def get_current_panel(self):
@@ -102,16 +103,16 @@ class Layout():
 
         # determine a scaling factor
 
-        paths_size = Layout.get_path_size(paths)
-        print "Paths size: %s" % str(paths_size)
-
+        # Turn them into floats
         for path_index, path in enumerate(paths):
             for point_index, point in enumerate(path):
                 paths[path_index][point_index] = (float(point[0]), float(point[1]))
 
+        paths_size = Layout.get_path_size(paths)
+        print "Paths size: %s" % str(paths_size)
 
         panel_ratio = p.height_to_width()
-        paths_ratio = paths_size[1] / paths_size[0]
+        paths_ratio = paths_size[1] / float(paths_size[0])
 
         print "Panel ratio: %s" % panel_ratio
         print "Paths ratio: %s" % paths_ratio
@@ -139,7 +140,6 @@ class Layout():
     def get_path_size(cls, paths):
         x_max = 0
         y_max = 0
-
         for path in paths:
             for point in path:
                 if point[0] > x_max: x_max = point[0]

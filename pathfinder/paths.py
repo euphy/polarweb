@@ -107,25 +107,35 @@ def filter_paths(paths, min_length=0, max_paths=0):
     return paths
 
 
-def paths2svg(paths, shape, out_file, scale=1, show_nodes=False, outline=False):
+def paths2svg(paths, document_size, out_file, scale=1, show_nodes=False, outline=False, page=None):
     """
     Write an svg file to preview the paths.
     """
     with open(out_file, 'w') as f:
         f.write("<?xml version=\"1.0\" standalone=\"no\"?>")
-        shape = (shape[0]*scale, shape[1]*scale)
+        if not document_size:
+            document_size = Layout.get_path_size(paths)
+
+        document_size = (document_size[0]*scale, document_size[1]*scale)
         f.write(("<svg width=\"%dpx\" height=\"%dpx\" version=\"1.1\" " +
-                 "xmlns=\"http://www.w3.org/2000/svg\">") % shape)
+                 "xmlns=\"http://www.w3.org/2000/svg\">") % document_size)
 
         if outline:
-            size = Layout.get_path_size(paths)
+            # size = Layout.get_path_size(paths)
             f.write("<path d=\"M%d %d" % (0, 0))
-            f.write(" L%s %s" % (size[0]*scale, 0))
-            f.write(" L%s %s" % (size[0]*scale, size[1]*scale))
-            f.write(" L%s %s" % (0, size[1]*scale))
+            f.write(" L%s %s" % (document_size[0]*scale, 0))
+            f.write(" L%s %s" % (document_size[0]*scale, document_size[1]*scale))
+            f.write(" L%s %s" % (0, document_size[1]*scale))
             f.write(" L%s %s" % (0, 0))
             f.write("\" stroke-width=\"5\" stroke=\"#F00\" fill=\"#DDD\"/>")
 
+            if page:
+                f.write("<path d=\"M%d %d" % (page.position.x*scale, page.position.y*scale))
+                f.write(" L%s %s" % (page.size.x*scale, page.position.y*scale))
+                f.write(" L%s %s" % (page.size.x*scale, page.size.y*scale))
+                f.write(" L%s %s" % (page.position.x, page.size.y*scale))
+                f.write(" L%s %s" % (page.position.x*scale, page.position.y*scale))
+                f.write("\" stroke-width=\"5\" stroke=\"#F00\" fill=\"#DDD\"/>")
 
         # draw a black line for each edge
         for path in paths:
