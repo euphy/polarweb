@@ -171,11 +171,15 @@ class Polargraph():
             if self.status == 'acquired' \
                     and self.layout.get_current_panel() \
                     and self.paths:
-                self.paths = self.layout.scale_to_panel(self.paths)
-                commands = self.build_commands(self.paths)
-
-                print "%s Appending %s commands the the queue." % (self.name, len(commands))
-                self.queue.extend(commands)
+                try:
+                    self.paths = self.layout.scale_to_panel(self.paths)
+                    commands = self.build_commands(self.paths)
+                    print "%s Appending %s commands the the queue." % (self.name, len(commands))
+                    self.queue.extend(commands)
+                except ValueError:
+                    print "%s Problem scaling paths to the panel."
+                    self.paths = None
+                    self.queue.clear()
 
                 if self.queue:
                     self.status = "serving"
@@ -212,8 +216,9 @@ class Polargraph():
                 'contacted': self.contacted,
                 'page': self.current_page['name'],
                 'camera_in_use': Polargraph.camera_lock,
-                'paths': self.paths,
-                'current panel': str(self.layout.get_current_panel().__str__())
+                'current panel': str(self.layout.get_current_panel().__str__()),
+                'layout design': str(self.layout.design),
+                'paths': self.paths
         }
 
     def control_acquire(self, command):
@@ -242,11 +247,14 @@ class Polargraph():
             self.queue_running = False
         elif command == 'cancel_panel':
             self.queue.clear()
+            self.queue.append("C14,0,END")  # pen lift
             self.layout.remove_current_panel()
+
         elif command == 'cancel_page':
             self.queue.clear()
             self.queue_running = False
             self.layout.clear_panels()
+            self.status = 'waiting_for_layout'
         elif command == 'reuse_panel':
             self.queue.clear()
 
@@ -326,6 +334,11 @@ class Polargraph():
             self.layout = Layout(page, layout_name)
             self.layout.use_random_panel()
             self.status = 'idle'
+
+        return {'layout': layout_name,
+                'page': page}
+
+
 
     def build_commands(self, paths):
         result = []

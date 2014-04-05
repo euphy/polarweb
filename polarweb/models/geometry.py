@@ -59,6 +59,12 @@ class Layout():
                 panel = Rectangle(size=panel_size, position=pos+origin)
                 panels[(col, row)] = panel
 
+        # for key in panels.keys():
+        #     panels[key].size.x = panels[key].size.x - 4
+        #     panels[key].size.y = panels[key].size.y - 4
+        #     panels[key].position.x += 2
+        #     panels[key].position.y += 2
+
         return panels
 
     def use_random_panel(self):
@@ -95,6 +101,7 @@ class Layout():
 
     def clear_panels(self):
         self.panels.clear()
+        self.current_panel_key = None
 
     def scale_to_panel(self, paths):
         p = self.get_current_panel()
@@ -130,8 +137,8 @@ class Layout():
         print "transform: %s" % str(self.extent.position)
         for path_index, path in enumerate(paths):
             for point_index, point in enumerate(path):
-                paths[path_index][point_index] = (point[0]+self.extent.position.x,
-                                                  point[1]+self.extent.position.y)
+                paths[path_index][point_index] = (point[0]+p.position.x,
+                                                  point[1]+p.position.y)
 
 
         return paths

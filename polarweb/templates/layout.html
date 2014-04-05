@@ -83,13 +83,13 @@
 					<button class="btn btn-primary" type="button" onclick="$.post('api/m/{{machine_name}}/layout/4x4')">4x4</button>
                     <h3>Acquire:</h3>
                     <div class="form-group">
-                        <div class="checkbox">
-                             <label><input type="checkbox" checked />Acquire new image automatically</label>
-                        </div>
+                        <!--<div class="checkbox">-->
+                             <!--<label><input type="checkbox" />Acquire new image automatically</label>-->
+                        <!--</div>-->
                         <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/acquire/now', function(data){
                         console.log(data);
                         $('#connected-{{machine_name}}').html(data);
-                        }, 'json');">Take picture now</button>
+                        }, 'json');">Start looking now</button>
                     </div>
                     <h3>Status:</h3>
                     <div id="state-{{machine_name}}" class="scrolling_col_div"></div>

@@ -3,6 +3,8 @@ from flask import Flask, jsonify, render_template, flash, Response, send_file, m
 from flask_assets import Environment, Bundle
 import time
 import io
+from euclid import Vector2
+from polarweb.models.geometry import Rectangle
 from polarweb.models.machine import Machines
 
 
@@ -90,7 +92,11 @@ def get_layout(machine_name):
 
 @app.route('/api/m/<machine_name>/layout/<layout_name>', methods=['POST'])
 def set_layout(machine_name, layout_name):
-    return jsonify(app.machines[machine_name].set_layout(layout_name=layout_name))
+    result = app.machines[machine_name].set_layout(page={'name': 'A1',
+                                                         'extent': Rectangle(Vector2(594, 837),
+                                                                             Vector2(61, 85))},
+                                                   layout_name=layout_name)
+    return jsonify(app.machines[machine_name].state())
 
 
 @app.route('/api/m/<machine_name>/drawing/<command>', methods=['POST'])
