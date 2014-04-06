@@ -245,8 +245,10 @@ class Polargraph():
         return hours, minutes, seconds
 
     def state(self):
-        return {'name': self.name,
+
+        result={'name': self.name,
                 'status': self.status,
+                'queue_running': self.queue_running,
                 'calibrated': self.calibrated,
                 'ready': self.ready,
                 'last_move': self.last_move,
@@ -256,8 +258,15 @@ class Polargraph():
                 'camera_in_use': Polargraph.camera_lock,
                 'current panel': str(self.layout.get_current_panel().__str__()),
                 'layout design': str(self.layout.design),
-                'paths': self.paths
+                'comm port': self.comm_port,
         }
+        if self.paths:
+            result['paths'] = len(self.paths)
+        else:
+            result['paths'] = 0
+
+        return result
+
 
     def control_acquire(self, command):
         if command == 'automatic':
@@ -268,8 +277,7 @@ class Polargraph():
             result = self.state()
             ac = self.acquire()
             if ac:
-                result.update(self.acquire())
-
+                result.update(ac)
             return result
 
         return self.state()
@@ -292,7 +300,7 @@ class Polargraph():
             self.queue_running = False
             self.layout.clear_panels()
             self.queue.append("C14,0,END")  # pen lift
-            self.status = 'waiting_for_layout'
+            self.status = 'waiting_for_new_layout'
         elif command == 'reuse_panel':
             self.queue.clear()
             self.layout.current_panel_key = None

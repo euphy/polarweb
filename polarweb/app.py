@@ -34,7 +34,7 @@ def init_machines():
 # ==================================================================
 @app.route('/')
 def start():
-    flash("Welcome to the Polargraph web service!", 'alert-success')
+    # flash("Welcome to the Polargraph web service!", 'alert-success')
     return render_template("index.html", machines=app.machines)
 
 

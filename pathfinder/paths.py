@@ -127,7 +127,7 @@ def paths2svg(paths, document_size, out_file, scale=1, show_nodes=False, outline
             f.write(" L%s %s" % (document_size[0]*scale, document_size[1]*scale))
             f.write(" L%s %s" % (0, document_size[1]*scale))
             f.write(" L%s %s" % (0, 0))
-            f.write("Z\" stroke-width=\"5\" stroke=\"#F00\" fill=\"#DDD\"/>")
+            f.write("Z\" stroke-width=\"5\" stroke=\"#000\" fill=\"#DDD\"/>")
 
             if page:
                 f.write("<path d=\"M%d %d" % (page.position.x*scale, page.position.y*scale))
@@ -135,7 +135,7 @@ def paths2svg(paths, document_size, out_file, scale=1, show_nodes=False, outline
                 f.write(" L%s %s" % ((page.position.x+page.size.x)*scale, (page.position.y+page.size.y)*scale))
                 f.write(" L%s %s" % (page.position.x, (page.position.y+page.size.y)*scale))
                 f.write(" L%s %s" % (page.position.x*scale, page.position.y*scale))
-                f.write("Z\" stroke-width=\"5\" stroke=\"#F00\" fill=\"#DDD\"/>")
+                f.write("Z\" stroke-width=\"5\" stroke=\"#357ebd\" fill=\"#DDD\"/>")
 
             if panel:
                 f.write("<path d=\"M%d %d" % (panel.position.x*scale, panel.position.y*scale))

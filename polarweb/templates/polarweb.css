@@ -1,4 +1,6 @@
 .scrolling_col_div { max-height: 300px;
-                     overflow-y:scroll;}
+                     overflow-y:scroll;
+                     width: 85%}
 
-.hidden_div { visibility: collapse }
+.hidden_div { visibility: hidden;
+              display: none }
