@@ -106,6 +106,12 @@ def set_layout(machine_name, layout_name):
     return jsonify(app.machines[machine_name].state())
 
 
+@app.route('/api/m/<machine_name>/move/routine/<routine_name>', methods=['POST'])
+def draw_routine(machine_name, routine_name):
+    result = app.machines[machine_name].draw_routine(routine_name)
+    return jsonify(app.machines[machine_name].state())
+
+
 @app.route('/api/m/<machine_name>/drawing/<command>', methods=['POST'])
 def control_drawing(machine_name, command):
     """
@@ -119,7 +125,8 @@ def control_speed(machine_name):
     """
     Sends commands to control the drawing: 'pause', 'run', 'cancel_page' etc.
     """
-    result = app.machines[machine_name].control_movement(data=request.form)
+    result = app.machines[machine_name].control_movement(data={'speed': str(request.form['speed-input']),
+                                                               'accel': str(request.form['accel-input'])})
     return jsonify(result)
 
 @app.route('/api/m/<machine_name>/pen/<command>', methods=['POST'])

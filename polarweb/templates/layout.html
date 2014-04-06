@@ -110,13 +110,13 @@
                     </div>
                     <h3>Movement:</h3>
                     <div class="form-group">
-                        <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/move/routine/page-edge')">Outline page</button>
-                        <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/move/routine/panel-edges')">Outline panels</button>
+                        <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/move/routine/page_edge')">Outline page</button>
+                        <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/move/routine/panel_edges')">Outline panels</button>
                         <div class="control-group">
                             <form method="post" action="api/m/{{machine_name}}/speed">
                             <label class="control-label" for="speed-input">Max speed</label>
                             <div class="controls">
-                                <input id="speed-input" name="text-input" type="text" placeholder="3000" class="input-xlarge">
+                                <input id="speed-input" name="speed-input" type="text" placeholder="3000" class="input-xlarge">
                             </div>
                             <label class="control-label" for="accel-input">Acceleration</label>
                             <div class="controls">

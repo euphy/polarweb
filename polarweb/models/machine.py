@@ -29,15 +29,15 @@ class Machines(dict):
         self['rgb_ind'] = AcquireIndicator()
 
         m1 = Polargraph("left",
-                        Rectangle(Vector2(705, 980), Vector2(0, 0)),
+                        Rectangle(Vector2(725, 980), Vector2(0, 0)),
                         page={'name': 'A1',
-                              'extent': Rectangle(Vector2(594, 837), Vector2(61, 85))},
+                              'extent': Rectangle(Vector2(450, 550), Vector2(125, 150))},
                         comm_port="COM6",
                         rgb_ind=self['rgb_ind'])
         m2 = Polargraph("right",
-                        Rectangle(Vector2(705, 980), Vector2(0, 0)),
+                        Rectangle(Vector2(725, 980), Vector2(0, 0)),
                         page={'name': 'A1',
-                              'extent': Rectangle(Vector2(594, 837), Vector2(61, 85))},
+                              'extent': Rectangle(Vector2(450, 550), Vector2(125, 150))},
                         comm_port="COM4",
                         rgb_ind=self['rgb_ind'])
 
@@ -126,7 +126,7 @@ class Polargraph():
                 received_log.append(l)
                 if len(received_log) > 200:
                     received_log.popleft()
-                print "%s: %s. %s" % (self.name, len(received_log), l)
+                print "%s: %s" % (self.name, l)
             if freq:
                 time.sleep(freq)
 
@@ -310,21 +310,35 @@ class Polargraph():
 
     def control_pen(self, command):
         if command == 'up':
-            self.queue.append("C14,0,END")
+            self.queue.append("C14,20,END")
         elif command == 'down':
-            self.queue.append("C13,200,END")
+            self.queue.append("C13,150,END")
 
         return self.state()
 
     def control_movement(self, data):
         if 'speed' in data:
-            self.queue.append("C31,%d,END" % data['speed'])
+            self.queue.append("C31,%s,END" % data['speed'])
         if 'accel' in data:
-            self.queue.append("C32,%d,END" % data['accel'])
+            self.queue.append("C32,%s,END" % data['accel'])
         if 'calibrate' in data:
             self.queue.append("C48,END")
 
         return self.state()
+
+    def draw_routine(self, routine_name):
+        if routine_name == 'page_edge':
+            p = self.extent
+            perimeter = [(p.position.x, p.position.y),
+                (p.position.x+p.size.x, p.position.y),
+                (p.position.x+p.size.x, p.position.y+p.size.y),
+                (p.position.x, p.position.y+p.size.y),
+                (p.position.x, p.position.y)]
+            self.queue.extend(self.convert_paths_to_move_commands(perimeter))
+
+        elif routine_name == 'panel_edges':
+            for p in self.layout.panels:
+                self.queue.extend(self.convert_paths_to_move_commands(p))
 
     def acquire(self):
         """  Method that will acquire an image to draw.
@@ -341,8 +355,7 @@ class Polargraph():
         img_filename = grabber.get_image(filename="png", rgb_ind=self.rgb_ind)
         print "Got %s" % img_filename
 
-        self.paths.append(sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind)[0])
-
+        self.paths.extend(sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind))
         if self.paths:
             self.status = 'acquired'
         else:
@@ -383,9 +396,8 @@ class Polargraph():
                 'page': page}
 
 
-
     def build_commands(self, paths):
-        result = []
+
         p = self.layout.get_current_panel()
         perimeter = [(p.position.x, p.position.y),
                      (p.position.x+p.size.x, p.position.y),
@@ -395,23 +407,24 @@ class Polargraph():
 
         ps = [perimeter]
         ps.extend(paths)
+        result = self.convert_paths_to_move_commands(ps)
 
+        return result
 
-        for path in ps:
+    def convert_paths_to_move_commands(self, paths):
+        result = []
+        for path in paths:
             first = True
             for point in path:
                 if first:
-                    result.append("C14,0,END")
+                    result.append("C14,20,END")
                     result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
-                    result.append("C13,200,END")
+                    result.append("C13,160,END")
                     first = False
                 else:
                     result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
 
-        result.append("C14,0,END")
+        result.append("C14,20,END")
 
         return result
-
-
-
 
