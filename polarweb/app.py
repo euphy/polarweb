@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, render_template, flash, Response, send_file, make_response
+from flask import Flask, jsonify, render_template, flash, Response, send_file, make_response, request
 from flask_assets import Environment, Bundle
 import time
 import io
@@ -45,7 +45,7 @@ def start():
 @app.route('/api/m/<machine_name>/calibrate', methods=['POST'])
 def calibrate(machine_name):
     print "Calibrating %s" % machine_name
-    result = app.machines[machine_name].calibrate()
+    result = app.machines[machine_name].control_movement({'calibrate': True})
     return jsonify(result)
 
 
@@ -112,6 +112,14 @@ def control_drawing(machine_name, command):
     Sends commands to control the drawing: 'pause', 'run', 'cancel_page' etc.
     """
     result = app.machines[machine_name].control_drawing(command)
+    return jsonify(result)
+
+@app.route('/api/m/<machine_name>/speed', methods=['POST'])
+def control_speed(machine_name):
+    """
+    Sends commands to control the drawing: 'pause', 'run', 'cancel_page' etc.
+    """
+    result = app.machines[machine_name].control_movement(data=request.form)
     return jsonify(result)
 
 @app.route('/api/m/<machine_name>/pen/<command>', methods=['POST'])

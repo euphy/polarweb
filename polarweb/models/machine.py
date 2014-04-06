@@ -316,8 +316,14 @@ class Polargraph():
 
         return self.state()
 
-    def calibrate(self):
-        self.queue.append("C48,END")
+    def control_movement(self, data):
+        if 'speed' in data:
+            self.queue.append("C31,%d,END" % data['speed'])
+        if 'accel' in data:
+            self.queue.append("C32,%d,END" % data['accel'])
+        if 'calibrate' in data:
+            self.queue.append("C48,END")
+
         return self.state()
 
     def acquire(self):
