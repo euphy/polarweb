@@ -99,9 +99,7 @@ def get_layout_svg(machine_name):
 
 @app.route('/api/m/<machine_name>/layout/<layout_name>', methods=['POST'])
 def set_layout(machine_name, layout_name):
-    result = app.machines[machine_name].set_layout(page={'name': 'A1',
-                                                         'extent': Rectangle(Vector2(594, 837),
-                                                                             Vector2(61, 85))},
+    result = app.machines[machine_name].set_layout(page=Machines.default_page['extent'],
                                                    layout_name=layout_name)
     return jsonify(app.machines[machine_name].state())
 
