@@ -21,6 +21,10 @@ from serial.tools import list_ports
 
 
 class Machines(dict):
+
+    default_page={'name': 'A1',
+                  'extent': Rectangle(Vector2(450, 550), Vector2(125, 150))}
+
     def __init__(self, *args, **kwargs):
         super(Machines, self).__init__(*args, **kwargs)
         self.__dict__ = self
@@ -30,14 +34,12 @@ class Machines(dict):
 
         m1 = Polargraph("left",
                         Rectangle(Vector2(725, 980), Vector2(0, 0)),
-                        page={'name': 'A1',
-                              'extent': Rectangle(Vector2(450, 550), Vector2(125, 150))},
+                        page = self.default_page,
                         comm_port="COM6",
                         rgb_ind=self['rgb_ind'])
         m2 = Polargraph("right",
                         Rectangle(Vector2(725, 980), Vector2(0, 0)),
-                        page={'name': 'A1',
-                              'extent': Rectangle(Vector2(450, 550), Vector2(125, 150))},
+                        page=self.default_page,
                         comm_port="COM4",
                         rgb_ind=self['rgb_ind'])
 
@@ -67,7 +69,7 @@ class Polargraph():
         self.rgb_ind = rgb_ind
 
         self.status = 'waiting_for_new_layout'
-        self.set_layout(page['extent'], '4x4')
+        self.set_layout(page['extent'], '3x3')
 
         # To do with communications
         self.connected = False
@@ -80,9 +82,9 @@ class Polargraph():
         self.started_time = datetime.now()
 
 
-        self.auto_acquire = False
+        self.auto_acquire = True
         self.drawing = False
-        self.queue_running = False
+        self.queue_running = True
         self.position = None
 
         self.serial = None
@@ -97,6 +99,10 @@ class Polargraph():
 
         # and the event heartbeat
         drawing_thread = thread.start_new_thread(self.heartbeat, (2,))
+
+        self.commands = {'pen_up': 'C14,20,END',
+                         'pen_down': 'C13,130,END'}
+
 
 
 
@@ -272,6 +278,7 @@ class Polargraph():
         if command == 'automatic':
             self.auto_acquire = True
         elif command == 'manual':
+            self.status = 'idle'
             self.auto_acquire = False
         elif command == 'now':
             result = self.state()
@@ -310,9 +317,9 @@ class Polargraph():
 
     def control_pen(self, command):
         if command == 'up':
-            self.queue.append("C14,20,END")
+            self.queue.append(self.commands['pen_up'])
         elif command == 'down':
-            self.queue.append("C13,150,END")
+            self.queue.append(self.commands['pen_down'])
 
         return self.state()
 
@@ -328,17 +335,17 @@ class Polargraph():
 
     def draw_routine(self, routine_name):
         if routine_name == 'page_edge':
-            p = self.extent
+            p = self.layout.extent
             perimeter = [(p.position.x, p.position.y),
                 (p.position.x+p.size.x, p.position.y),
                 (p.position.x+p.size.x, p.position.y+p.size.y),
                 (p.position.x, p.position.y+p.size.y),
                 (p.position.x, p.position.y)]
-            self.queue.extend(self.convert_paths_to_move_commands(perimeter))
+            self.queue.extend(self.convert_paths_to_move_commands([perimeter]))
 
         elif routine_name == 'panel_edges':
             for p in self.layout.panels:
-                self.queue.extend(self.convert_paths_to_move_commands(p))
+                self.queue.extend(self.convert_paths_to_move_commands([p]))
 
     def acquire(self):
         """  Method that will acquire an image to draw.
@@ -417,9 +424,9 @@ class Polargraph():
             first = True
             for point in path:
                 if first:
-                    result.append("C14,20,END")
+                    result.append(self.commands['pen_up'])
                     result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
-                    result.append("C13,160,END")
+                    result.append(self.commands['pen_down'])
                     first = False
                 else:
                     result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
