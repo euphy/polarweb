@@ -59,11 +59,6 @@ class ImageGrabber(object):
             img, self.posterize_levels)
         img = face_image.threshold(img, thresholds)
 
-        # if self.debug:
-        #     cv2.imshow('frame', img)
-        #     cv2.waitKey(1)
-        #     # time.sleep(4)
-
         return img
 
     def get_image(self, filename=None, rgb_ind=None):
@@ -83,9 +78,13 @@ class ImageGrabber(object):
         if self.debug:
             print "Face lock obtained"
 
+        if filename:
+            self.save_image_as_file(self.frame, filename)
+
         if rgb_ind:
             indicator_thread = FlashColourThread(rgb_ind, 'green', 4, num_of_flashes=1)
             indicator_thread.start()
+
         image = self._isolate_face()
         self.close()
 

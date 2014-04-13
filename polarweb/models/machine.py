@@ -292,7 +292,7 @@ class Polargraph():
     def control_drawing(self, command):
         if command == 'run':
             if self.status == 'waiting_for_new_layout':
-                self.set_layout(self.extent, self.layout.design)
+                self.set_layout(self.layout.extent, self.layout.design)
                 self.status = 'idle'
             self.queue_running = True
         elif command == 'pause':
@@ -378,7 +378,7 @@ class Polargraph():
         * setting status
         """
         try:
-            print "Processing incoming message."
+            #print "Processing incoming message."
             if 'READY_300' in command:
                 parent.contacted = True
                 parent.ready = True

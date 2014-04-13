@@ -34,8 +34,12 @@ def init_machines():
 # ==================================================================
 @app.route('/')
 def start():
-    # flash("Welcome to the Polargraph web service!", 'alert-success')
-    return render_template("index.html", machines=app.machines)
+    return render_template("live.html", machines=app.machines)
+
+
+@app.route('/offline')
+def offline():
+    return render_template("offline.html", machines=app.machines)
 
 
 # ==================================================================
