@@ -1,5 +1,4 @@
 from random import randint
-import numpy
 
 __author__ = 'sandy_000'
 

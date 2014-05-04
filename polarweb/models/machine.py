@@ -2,28 +2,27 @@
 General model of the machine, including its communications route.
 """
 from collections import deque
-from datetime import datetime, time
-import io
-from multiprocessing import Process, Queue
+from datetime import datetime
 import os
-from random import randint
 import time
-import requests
-import serial
 import thread
-from xml.dom import minidom
+
+import serial
 from euclid import Vector2
-from image_grabber.lib.app import ImageGrabber
-from pathfinder import sample_workflow, paths2svg
-from polarweb.models.Indicator import AcquireIndicator
-from polarweb.models.geometry import Rectangle, Layout
 from serial.tools import list_ports
 
+from polarweb.image_grabber.lib.app import ImageGrabber
+from polarweb.pathfinder import paths2svg
+from polarweb.models.Indicator import AcquireIndicator
+from polarweb.models.geometry import Rectangle, Layout
+from polarweb.pathfinder import sample_workflow
+
+from polarweb.config import SETTINGS
 
 class Machines(dict):
 
-    default_page={'name': 'A1',
-                  'extent': Rectangle(Vector2(450, 550), Vector2(125, 150))}
+    default_page=SETTINGS['pages'][SETTINGS['default_page']]
+    default_page['name'] = SETTINGS['default_page']
 
     def __init__(self, *args, **kwargs):
         super(Machines, self).__init__(*args, **kwargs)
@@ -32,20 +31,15 @@ class Machines(dict):
         self.list_ports()
         self['rgb_ind'] = AcquireIndicator()
 
-        m1 = Polargraph("left",
-                        Rectangle(Vector2(725, 980), Vector2(0, 0)),
-                        page = self.default_page,
-                        comm_port="COM6",
-                        rgb_ind=self['rgb_ind'])
-        m2 = Polargraph("right",
-                        Rectangle(Vector2(725, 980), Vector2(0, 0)),
-                        page=self.default_page,
-                        comm_port="COM4",
-                        rgb_ind=self['rgb_ind'])
-
-        self[m1.name] = m1
-        self[m2.name] = m2
-        self.machine_names = [m1.name, m2.name]
+        self.machine_names = []
+        for k, v in SETTINGS['machines'].items():
+            p = Polargraph(name=k,
+                           extent=v['extent'],
+                           page=SETTINGS['pages'][v['default_page']],
+                           comm_port=v['comm_port'],
+                           rgb_ind=self['rgb_ind'])
+            self[p.name] = p
+            self.machine_names.append(p.name)
 
 
     def list_ports(self):
@@ -82,9 +76,9 @@ class Polargraph():
         self.started_time = datetime.now()
 
 
-        self.auto_acquire = True
+        self.auto_acquire = False
         self.drawing = False
-        self.queue_running = True
+        self.queue_running = False
         self.position = None
 
         self.serial = None

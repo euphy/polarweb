@@ -44,12 +44,13 @@ Core:
 http://pyserial.sourceforge.net/
 
 Indicator (Digispark RGB LED)
-* Arduino https://github.com/digistump/DigisparkExamplePrograms/blob/master/Python/DigiUSB/source/arduino/usbdevice.py
-* PyUSB
+* Arduino.usbdevice - Copy https://github.com/digistump/DigisparkExamplePrograms/blob/master/Python/DigiUSB/source/arduino into /usr/lib/python2.7/dist-packages
+* PyUSB pip install pyusb
 
 Image Grabber:
 * OpenCV 2.* (cv2)
 
+Pi:
   sudo apt-get update
   sudo apt-get install libopencv-dev
   sudo apt-get install python-opencv
