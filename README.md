@@ -44,7 +44,7 @@ Core:
 http://pyserial.sourceforge.net/
 
 Indicator (Digispark RGB LED)
-* Arduino
+* Arduino https://github.com/digistump/DigisparkExamplePrograms/blob/master/Python/DigiUSB/source/arduino/usbdevice.py
 * PyUSB
 
 Image Grabber:
