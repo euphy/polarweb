@@ -21,7 +21,7 @@ def load_config_from_json():
         # unpack the machine details
         for k in data['machines']:
             v = data['machines'][k]
-            v['extent'] = Rectangle(Vector2(v['width'], v['height']), Vector2(0,0))
+            v['extent'] = Rectangle(Vector2(v['width'], v['height']), Vector2(0, 0))
             v['name'] = k
 
 
