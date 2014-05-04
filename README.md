@@ -50,6 +50,10 @@ Indicator (Digispark RGB LED)
 Image Grabber:
 * OpenCV 2.* (cv2)
 
+  sudo apt-get update
+  sudo apt-get install libopencv-dev
+  sudo apt-get install python-opencv
+
 http://opencvpython.blogspot.in/2012/05/install-opencv-in-windows-for-python.html
 
 http://stackoverflow.com/questions/10417108/what-is-different-between-all-these-opencv-python-interfaces
