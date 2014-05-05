@@ -24,5 +24,11 @@
         "height": 980,
         "comm_port": "COM4",
         "default_page": "A1"}
-    }
+    },
+
+"artwork_acquire":
+    {"method_name": "acquire_face_track",
+    "module": "polarweb.models.acquire"}
+
+
 }

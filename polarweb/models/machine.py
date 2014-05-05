@@ -12,6 +12,7 @@ from euclid import Vector2
 from serial.tools import list_ports
 
 from polarweb.image_grabber.lib.app import ImageGrabber
+from polarweb.models import acquire
 from polarweb.pathfinder import paths2svg
 from polarweb.models.Indicator import AcquireIndicator
 from polarweb.models.geometry import Rectangle, Layout
@@ -37,7 +38,8 @@ class Machines(dict):
                            extent=v['extent'],
                            page=SETTINGS['pages'][v['default_page']],
                            comm_port=v['comm_port'],
-                           rgb_ind=self['rgb_ind'])
+                           rgb_ind=self['rgb_ind'],
+                           acquire_method=SETTINGS['artwork_acquire'])
             self[p.name] = p
             self.machine_names.append(p.name)
 
@@ -55,7 +57,7 @@ class Polargraph():
 
     camera_lock = False
 
-    def __init__(self, name, extent, page, comm_port=None, rgb_ind=None):
+    def __init__(self, name, extent, page, comm_port=None, rgb_ind=None, artwork_acquire=None):
         self.name = name
         self.extent = extent
         self.current_page = page
@@ -96,6 +98,21 @@ class Polargraph():
 
         self.commands = {'pen_up': 'C14,20,END',
                          'pen_down': 'C13,130,END'}
+
+        # set up acquire strategy
+        self.can_acquire = False
+        if artwork_acquire:
+            try:
+                self.acquire = acquire.get_acquire_func(artwork_acquire['method_name'],
+                                                        artwork_acquire['module'])
+                self.can_acquire = True
+            except:
+                self.can_acquire = False
+
+
+
+
+
 
 
 
@@ -157,7 +174,7 @@ class Polargraph():
         while True:
             try:
                 if self.status == 'idle':
-                    if self.auto_acquire:
+                    if self.auto_acquire and self.can_acquire:
                         if self.layout.panels_left() > 0:
                             # acquire and use a new panel if successful
                             self.status = 'acquiring'
@@ -166,7 +183,11 @@ class Polargraph():
                             self.status = 'waiting_for_new_layout'
 
                 elif self.status == 'acquiring':
-                    self.acquire()
+                    try:
+                        self.acquire()
+                    except:
+                        print "Exception occurred when attempting to acquire some artwork."
+
 
                 elif self.status == 'acquired':
                     if not self.paths:
@@ -340,29 +361,6 @@ class Polargraph():
         elif routine_name == 'panel_edges':
             for p in self.layout.panels:
                 self.queue.extend(self.convert_paths_to_move_commands([p]))
-
-    def acquire(self):
-        """  Method that will acquire an image to draw.
-        """
-        if Polargraph.camera_lock:
-            print "Camera is locked. Cancelling. But do try again please!"
-            self.status = 'idle'
-            return {'http_code': 503}
-
-        Polargraph.camera_lock = True
-        self.paths = list()
-
-        grabber = ImageGrabber(debug=True)
-        img_filename = grabber.get_image(filename="png", rgb_ind=self.rgb_ind)
-        print "Got %s" % img_filename
-
-        self.paths.extend(sample_workflow.run(input_img=img_filename, rgb_ind=self.rgb_ind))
-        if self.paths:
-            self.status = 'acquired'
-        else:
-            print "That attempt to acquire didn't seem to result in any paths."
-            self.status = 'idle'
-        Polargraph.camera_lock = False
 
     def process_incoming_message(self, command, parent):
         """
