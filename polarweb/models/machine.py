@@ -21,8 +21,8 @@ from polarweb.config import SETTINGS
 
 class Machines(dict):
 
-    default_page=SETTINGS['pages'][SETTINGS['default_page']]
-    default_page['name'] = SETTINGS['default_page']
+    default_page = SETTINGS.pages[SETTINGS.default_page]
+    default_page['name'] = SETTINGS.default_page
 
     def __init__(self, *args, **kwargs):
         super(Machines, self).__init__(*args, **kwargs)
@@ -30,12 +30,12 @@ class Machines(dict):
 
         self.list_ports()
         self.machine_names = []
-        for k, v in SETTINGS['machines'].items():
+        for k, v in SETTINGS.machines.items():
             p = Polargraph(name=k,
                            extent=v['extent'],
-                           page=SETTINGS['pages'][v['default_page']],
+                           page=SETTINGS.pages[v['default_page']],
                            comm_port=v['comm_port'],
-                           acquire_method=SETTINGS['artwork_acquire'])
+                           acquire_method=SETTINGS.artwork_acquire)
             self[p.name] = p
             self.machine_names.append(p.name)
 
@@ -53,7 +53,11 @@ class Polargraph():
 
     camera_lock = False
 
-    def __init__(self, name, extent, page, comm_port=None, rgb_ind=None, artwork_acquire=None):
+    def __init__(self,
+                 name, extent, page,
+                 comm_port=None,
+                 rgb_ind=None,
+                 acquire_method=None):
         self.name = name
         self.extent = extent
         self.current_page = page
@@ -97,10 +101,11 @@ class Polargraph():
 
         # set up acquire strategy
         self.can_acquire = False
-        if artwork_acquire:
+        if acquire_method:
             try:
-                self.acquire = acquire.get_acquire_func(artwork_acquire['method_name'],
-                                                        artwork_acquire['module'])
+                self.acquire = \
+                    acquire.get_acquire_func(acquire_method['method_name'],
+                                             acquire_method['module'])
                 self.can_acquire = True
             except:
                 self.can_acquire = False
@@ -118,13 +123,18 @@ class Polargraph():
             self.serial = serial.Serial(self.comm_port)
             self.connected = True
             self.reading = True
-            print "Connected successfully to %s (%s)." % (self.comm_port, self.serial)
-            thread.start_new_thread(self._read_line, (None, self.received_log, self))
-            thread.start_new_thread(self._write_line, (None, self.queue))
+            print "Connected successfully to %s (%s)." % (self.comm_port,
+                                                          self.serial)
+            thread.start_new_thread(self._read_line, (None,
+                                                      self.received_log,
+                                                      self))
+            thread.start_new_thread(self._write_line, (None,
+                                                       self.queue))
             return True
 
         except Exception as e:
-            print "Oh there was an exception loading the port %s" % self.comm_port
+            print("Oh there was an exception loading the port %s"
+                  % self.comm_port)
             print e.message
             self.connected = False
             self.serial = None
@@ -159,12 +169,12 @@ class Polargraph():
             if freq:
                 time.sleep(freq)
 
-
-
-
     def heartbeat(self, freq):
         """
-        Setting status flags, and initiating new actions based on combinations of status flags.
+        Setting status flags, and initiating new actions based on combinations
+        of status flags.
+
+        This is an implementation of a finite state machine.
         """
         print '%s Status: %s' % (self.name, self.status)
         while True:
@@ -253,7 +263,7 @@ class Polargraph():
 
     def uptime(self):
         """
-        Returns the time since starting
+        Returns the time since starting.
         """
         d = datetime.now() - self.started_time
         s = d.seconds
@@ -262,21 +272,27 @@ class Polargraph():
         return hours, minutes, seconds
 
     def state(self):
+        """
+        Returns a dict of info about the state of the machine.
+        :return:
+        """
 
-        result={'name': self.name,
-                'status': self.status,
-                'queue_running': self.queue_running,
-                'calibrated': self.calibrated,
-                'ready': self.ready,
-                'last_move': self.last_move,
-                'uptime': self.uptime(),
-                'contacted': self.contacted,
-                'page': self.current_page['name'],
-                'camera_in_use': Polargraph.camera_lock,
-                'current panel': str(self.layout.get_current_panel().__str__()),
-                'layout design': str(self.layout.design),
-                'comm port': self.comm_port,
+        result = {'name': self.name,
+                  'status': self.status,
+                  'queue_running': self.queue_running,
+                  'calibrated': self.calibrated,
+                  'ready': self.ready,
+                  'last_move': self.last_move,
+                  'uptime': self.uptime(),
+                  'contacted': self.contacted,
+                  'page': self.current_page['name'],
+                  'camera_in_use': Polargraph.camera_lock,
+                  'current panel': str(self.layout.get_current_panel()
+                                       .__str__()),
+                  'layout design': str(self.layout.design),
+                  'comm port': self.comm_port,
         }
+
         if self.paths:
             result['paths'] = len(self.paths)
         else:
@@ -293,7 +309,7 @@ class Polargraph():
             self.auto_acquire = False
         elif command == 'now':
             result = self.state()
-            ac = self.acquire()
+            ac = self.acquire(self)
             if ac:
                 result.update(ac)
             return result
@@ -345,6 +361,15 @@ class Polargraph():
         return self.state()
 
     def draw_routine(self, routine_name):
+        """
+        Adds commands to the queue for various pre-baked routines, currently:
+
+            'page_edge':   perimeter of defined page space
+            'panel_edges': the perimeters of the layout panels
+
+        :param routine_name:
+        :return:
+        """
         if routine_name == 'page_edge':
             p = self.layout.extent
             perimeter = [(p.position.x, p.position.y),
@@ -360,7 +385,9 @@ class Polargraph():
 
     def process_incoming_message(self, command, parent):
         """
-        Receives messages from the machine and deals with them. This will involve:
+        Receives messages from the machine and deals with them.
+        This involves:
+
         * raising errors
         * confirmations of updates
         * setting status
@@ -382,6 +409,14 @@ class Polargraph():
         return Vector2(splitted[1], splitted[2])
 
     def set_layout(self, page, layout_name):
+        """
+        If the machine is waiting for a new layout, it creates a new one, and
+        selects a new panel to target.
+
+        :param page:
+        :param layout_name:
+        :return:
+        """
         if self.status == 'waiting_for_new_layout':
             self.layout = Layout(page, layout_name)
             self.layout.use_random_panel()
@@ -392,13 +427,21 @@ class Polargraph():
 
 
     def build_commands(self, paths):
+        """
+        Takes a list of paths, corresponding to one panels-worth of drawing,
+        and returns a list of string commands.
+
+        :param paths:
+        :return:
+        """
 
         p = self.layout.get_current_panel()
-        perimeter = [(p.position.x, p.position.y),
-                     (p.position.x+p.size.x, p.position.y),
-            (p.position.x+p.size.x, p.position.y+p.size.y),
-            (p.position.x, p.position.y+p.size.y),
-            (p.position.x, p.position.y)]
+        perimeter = \
+            [(p.position.x, p.position.y),
+             (p.position.x+p.size.x, p.position.y),
+             (p.position.x+p.size.x, p.position.y+p.size.y),
+             (p.position.x, p.position.y+p.size.y),
+             (p.position.x, p.position.y)]
 
         ps = [perimeter]
         ps.extend(paths)
@@ -407,6 +450,14 @@ class Polargraph():
         return result
 
     def convert_paths_to_move_commands(self, paths):
+        """
+        Unpacks a list of paths, which are themselves a list of points.
+        Adds a pen-up and pen-down at the beginning of each path,
+        and a pen-up at the end.
+
+        :param paths:
+        :return:
+        """
         result = []
         for path in paths:
             first = True

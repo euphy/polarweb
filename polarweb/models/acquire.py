@@ -5,15 +5,18 @@ from polarweb.pathfinder import workflow
 
 def get_acquire_func(method_name, module):
     """
-    Function that returns a function, that in turn may be called and will acquire a piece of artwork.
+    Function that returns a function, that in turn may be called and will
+    acquire a piece of artwork.
 
-    Alternatively it may return None, in which case there was no acquisition source configured.
+    Alternatively it may return None, in which case there was no
+    acquisition source configured.
     """
     mod = import_module(module)
     return getattr(mod, method_name)
 
 def acquire_face_track(p):
-    """  Method that will acquire an image to draw.
+    """
+    Method that will acquire an image to draw.
     """
     if p.camera_lock:
         print "Camera is locked. Cancelling. But do try again please!"

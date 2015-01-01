@@ -62,7 +62,7 @@ class ImageGrabber(object):
         self.last_highest = 0
         indicator_thread = None
         if rgb_ind:
-            indicator_thread = FlashColourThread(rgb_ind, 'orange', 0.2, 'black', 2)
+            # indicator_thread = FlashColourThread(rgb_ind, 'orange', 0.2, 'black', 2)
             indicator_thread.start()
 
         if self.debug:
@@ -171,14 +171,13 @@ class ImageGrabber(object):
 
     def _wait_for_face_lock(self, indicator_thread=None):
         while True:
+            print "hi"
             if not hasattr(self, 'faces') or self.faces == None or len(self.faces) == 0:
-                indicator_thread.change_pattern('green', 0.5, 'black', 1.5)
                 self.last_highest = 0
             else:
                 diff = self.tracking.score_max - self.last_highest
                 print "Diff: %s" % diff
                 diff = diff / 20.0
-                indicator_thread.change_pattern('blue', diff, 'fuchsia', diff)
             self._capture_frame()
             # time.sleep(1)
 
