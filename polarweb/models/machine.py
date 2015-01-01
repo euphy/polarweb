@@ -21,8 +21,8 @@ from polarweb.config import SETTINGS
 
 class Machines(dict):
 
-    default_page = SETTINGS.pages[SETTINGS.default_page]
-    default_page['name'] = SETTINGS.default_page
+    default_page = SETTINGS.PAGES[SETTINGS.DEFAULT_PAGE]
+    default_page['name'] = SETTINGS.DEFAULT_PAGE
 
     def __init__(self, *args, **kwargs):
         super(Machines, self).__init__(*args, **kwargs)
@@ -30,12 +30,12 @@ class Machines(dict):
 
         self.list_ports()
         self.machine_names = []
-        for k, v in SETTINGS.machines.items():
+        for k, v in SETTINGS.MACHINES.items():
             p = Polargraph(name=k,
                            extent=v['extent'],
-                           page=SETTINGS.pages[v['default_page']],
+                           page=SETTINGS.PAGES[v['default_page']],
                            comm_port=v['comm_port'],
-                           acquire_method=SETTINGS.artwork_acquire)
+                           acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD)
             self[p.name] = p
             self.machine_names.append(p.name)
 
@@ -76,7 +76,6 @@ class Polargraph():
 
         self.last_move = None
         self.started_time = datetime.now()
-
 
         self.auto_acquire = False
         self.drawing = False
@@ -394,7 +393,7 @@ class Polargraph():
         """
         try:
             #print "Processing incoming message."
-            if 'READY_300' in command:
+            if 'READY' in command:
                 parent.contacted = True
                 parent.ready = True
             elif 'CARTESIAN' in command:

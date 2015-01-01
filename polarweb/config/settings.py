@@ -1,4 +1,4 @@
-pages = {"A1": {
+PAGES = {"A1": {
             "width": 450,
             "height": 550,
             "x": 125,
@@ -10,13 +10,15 @@ pages = {"A1": {
             "y": 150}
         }
 
-default_page = "A1"
+DEFAULT_PAGE = "A1"
 
-machines = {"left": {
+MACHINES = {"left": {
     "width": 725,
     "height": 980,
     "comm_port": "COM5",
     "default_page": "A1"}}
 
-artwork_acquire = {"method_name": "acquire_face_track",
+ARTWORK_ACQUIRE_METHOD = {"method_name": "acquire_face_track",
                    "module": "polarweb.models.acquire"}
+
+CAMERA_NUM = 0

@@ -4,6 +4,7 @@ from random import randint
 
 import cv2
 from PIL import Image
+from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.face import Tracking, Framing
 import image as face_image
 
@@ -29,7 +30,7 @@ class ImageGrabber(object):
         self.face_cascade = cv2.CascadeClassifier(
             os.path.join(path, '../resource/haarcascade_frontalface_default.xml'))
 
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
         self.set_resolution(640, 480)
 
         self.tracking = Tracking()
