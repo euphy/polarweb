@@ -6,7 +6,6 @@ import cv2
 from PIL import Image
 from polarweb.image_grabber.lib.face import Tracking, Framing
 import image as face_image
-from polarweb.models.Indicator import FlashColourThread
 
 
 class ImageGrabber(object):

@@ -1,6 +1,6 @@
 from importlib import import_module
 from polarweb.image_grabber.lib.app import ImageGrabber
-from polarweb.pathfinder import sample_workflow
+from polarweb.pathfinder import workflow
 
 
 def get_acquire_func(method_name, module):
@@ -27,7 +27,7 @@ def acquire_face_track(p):
     img_filename = grabber.get_image(filename="png", rgb_ind=p.rgb_ind)
     print "Got %s" % img_filename
 
-    p.paths.extend(sample_workflow.run(input_img=img_filename, rgb_ind=p.rgb_ind))
+    p.paths.extend(workflow.run(input_img=img_filename, rgb_ind=p.rgb_ind))
     if p.paths:
         p.status = 'acquired'
     else:

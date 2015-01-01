@@ -14,9 +14,8 @@ from serial.tools import list_ports
 from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.models import acquire
 from polarweb.pathfinder import paths2svg
-from polarweb.models.Indicator import AcquireIndicator
 from polarweb.models.geometry import Rectangle, Layout
-from polarweb.pathfinder import sample_workflow
+from polarweb.pathfinder import workflow
 
 from polarweb.config import SETTINGS
 
@@ -30,15 +29,12 @@ class Machines(dict):
         self.__dict__ = self
 
         self.list_ports()
-        self['rgb_ind'] = AcquireIndicator()
-
         self.machine_names = []
         for k, v in SETTINGS['machines'].items():
             p = Polargraph(name=k,
                            extent=v['extent'],
                            page=SETTINGS['pages'][v['default_page']],
                            comm_port=v['comm_port'],
-                           rgb_ind=self['rgb_ind'],
                            acquire_method=SETTINGS['artwork_acquire'])
             self[p.name] = p
             self.machine_names.append(p.name)

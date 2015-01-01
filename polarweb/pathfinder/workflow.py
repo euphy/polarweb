@@ -4,7 +4,6 @@ import time
 from PIL import Image
 import numpy
 from paths import build_graph, build_paths, filter_paths, paths2svg, paths2json
-from polarweb.models.Indicator import FlashColourThread
 from polarweb.pathfinder.smoothing import apply_box_smoothing
 from decimation import subsampling_decimation, anchor_angle_error, \
     total_divergence_error
@@ -21,8 +20,7 @@ def run(input_img='./sampleinput.png',
 
     indicator_thread = None
     if rgb_ind:
-        indicator_thread = FlashColourThread(rgb_ind, 'orange', 0.5, 'red', 0.5)
-        indicator_thread.start()
+        pass
 
     # Load image data as bitmap matrix
     image = Image.open(input_img)
