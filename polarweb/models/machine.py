@@ -35,7 +35,9 @@ class Machines(dict):
                            extent=v['extent'],
                            page=SETTINGS.PAGES[v['default_page']],
                            comm_port=v['comm_port'],
-                           acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD)
+                           baud_rate=v['baud_rate'],
+                           acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD,
+                           layout_name='3x3')
             self[p.name] = p
             self.machine_names.append(p.name)
 
@@ -48,7 +50,19 @@ class Machines(dict):
 
 class Polargraph():
     """
-    There's going to be a threaded / multiprocess thing going on here.
+    This is a model of a drawing machine. It includes it's drawing state
+    as well as the state of the communications lines to the machine and the
+    queue of commands going to it.
+
+    Each machines has a:
+
+    * name
+    * extent (size and position of machine)
+    * page (size of paper)
+    * communication port
+    * method of acquiring some artwork to draw
+    * drawing layout that splits the page
+
     """
 
     camera_lock = False
@@ -56,44 +70,46 @@ class Polargraph():
     def __init__(self,
                  name, extent, page,
                  comm_port=None,
-                 rgb_ind=None,
-                 acquire_method=None):
+                 baud_rate=9600,
+                 acquire_method=None,
+                 layout_name='3x3'):
         self.name = name
         self.extent = extent
         self.current_page = page
         self.comm_port = comm_port
-        self.rgb_ind = rgb_ind
+        self.baud_rate = baud_rate
 
-        self.status = 'waiting_for_new_layout'
-        self.set_layout(page['extent'], '3x3')
-
-        # To do with communications
+        # Physical machine state model
         self.connected = False
         self.contacted = False
         self.calibrated = False
         self.ready = False
         self.page_started = False
 
-        self.last_move = None
-        self.started_time = datetime.now()
-
-        self.auto_acquire = False
-        self.drawing = False
-        self.queue_running = False
-        self.position = None
+        self.status = 'waiting_for_new_layout'
+        self.set_layout(page['extent'], layout_name)
 
         self.serial = None
         self.queue = deque(['C17,400,400,10,END'])
         self.received_log = deque()
         self.reading = False
 
+        self.last_move = None
+        self.started_time = datetime.now()
+
+        # internal states
+        self.auto_acquire = False
+        self.drawing = False
+        self.queue_running = False
+        self.position = None
+
         self.paths = None
 
         # Init the serial io
-        self.setup_comm_port()
+        self.start_serial_comms()
 
-        # and the event heartbeat
-        drawing_thread = thread.start_new_thread(self.heartbeat, (2,))
+        # and the event update_status
+        drawing_thread = thread.start_new_thread(self.update_status, (2,))
 
         self.commands = {'pen_up': 'C14,20,END',
                          'pen_down': 'C13,130,END'}
@@ -109,24 +125,24 @@ class Polargraph():
             except:
                 self.can_acquire = False
 
+    def start_serial_comms(self):
+        """
+        Attempts to connect this machine to it's comm_port. It starts two
+        threads, one for reading that is attached to the 'received_log'
+        list, and one thread for writing that is attached to the main outgoing
+        command queue.
 
-
-
-
-
-
-
-
-    def setup_comm_port(self):
+        :return:
+        """
         try:
-            self.serial = serial.Serial(self.comm_port)
+            self.serial = serial.Serial(self.comm_port,
+                                        baudrate=self.baud_rate)
             self.connected = True
             self.reading = True
             print "Connected successfully to %s (%s)." % (self.comm_port,
                                                           self.serial)
             thread.start_new_thread(self._read_line, (None,
-                                                      self.received_log,
-                                                      self))
+                                                      self.received_log))
             thread.start_new_thread(self._write_line, (None,
                                                        self.queue))
             return True
@@ -139,12 +155,12 @@ class Polargraph():
             self.serial = None
             return False
 
-    def _read_line(self, freq, received_log, parent):
+    def _read_line(self, freq, received_log):
 
         while True:
             if self.reading:
                 l = self.serial.readline().strip('\r\n')
-                self.process_incoming_message(l, parent)
+                self.process_incoming_message(l)
                 received_log.append(l)
                 if len(received_log) > 200:
                     received_log.popleft()
@@ -168,12 +184,17 @@ class Polargraph():
             if freq:
                 time.sleep(freq)
 
-    def heartbeat(self, freq):
+    def update_status(self, freq):
         """
-        Setting status flags, and initiating new actions based on combinations
-        of status flags.
+        Transitions the machine status when NOT driven by external
+        events.
 
-        This is an implementation of a finite state machine.
+        This is an implementation of a finite state machine, it runs in a
+        thread, and controls the "automatic" behaviour of the machine, how it
+        behaves when, for instance, the queue empties and there's no lines
+        left to dispatch.
+
+
         """
         print '%s Status: %s' % (self.name, self.status)
         while True:
@@ -191,13 +212,15 @@ class Polargraph():
                     try:
                         self.acquire()
                     except:
-                        print "Exception occurred when attempting to acquire some artwork."
+                        print "Exception occurred when attempting to " \
+                              "acquire some artwork."
 
 
                 elif self.status == 'acquired':
                     if not self.paths:
                         self.status = 'idle'
-                        raise ValueError('Paths were not found, although status is acquired')
+                        raise ValueError('Paths were not found, '
+                                         'although status is acquired')
 
                     # find a new panel for this artwork
                     self.layout.remove_current_panel()
@@ -211,7 +234,8 @@ class Polargraph():
                     try:
                         self.paths = self.layout.scale_to_panel(self.paths)
                         commands = self.build_commands(self.paths)
-                        print '%s Appending %s commands to the queue.' % (self.name, len(commands))
+                        print ('%s Appending %s commands to the queue.'
+                               % (self.name, len(commands)))
                         self.queue.extend(commands)
                         if self.queue:
                             self.status = 'serving'
@@ -237,8 +261,11 @@ class Polargraph():
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
         paths2svg(self.paths or [],
-                  self.extent.size, filename, scale=1.0, show_nodes=True, outline=True,
-                  page=self.layout.extent, panel=self.layout.get_current_panel())
+                  self.extent.size, filename, scale=1.0, show_nodes=True,
+                  outline=True,
+                  page=self.layout.extent,
+                  panel=self.layout.get_current_panel()
+        )
 
         return filename
 
@@ -255,8 +282,11 @@ class Polargraph():
             panel_paths.append(path)
 
         paths2svg(panel_paths or [],
-                  self.extent.size, filename, scale=1.0, show_nodes=True, outline=True,
-                  page=self.layout.extent, panel=self.layout.get_current_panel())
+                  self.extent.size, filename, scale=1.0, show_nodes=True,
+                  outline=True,
+                  page=self.layout.extent,
+                  panel=self.layout.get_current_panel()
+        )
 
         return filename
 
@@ -382,7 +412,7 @@ class Polargraph():
             for p in self.layout.panels:
                 self.queue.extend(self.convert_paths_to_move_commands([p]))
 
-    def process_incoming_message(self, command, parent):
+    def process_incoming_message(self, command):
         """
         Receives messages from the machine and deals with them.
         This involves:
@@ -394,11 +424,11 @@ class Polargraph():
         try:
             #print "Processing incoming message."
             if 'READY' in command:
-                parent.contacted = True
-                parent.ready = True
+                self.contacted = True
+                self.ready = True
             elif 'CARTESIAN' in command:
-                parent.calibrated = True
-                parent.position = Polargraph.unpack_sync(command)
+                self.calibrated = True
+                self.position = Polargraph.unpack_sync(command)
         except:
             pass
 

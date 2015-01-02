@@ -74,7 +74,7 @@ def get_machine_svg(machine_name):
 
 @app.route('/api/m/<machine_name>/connect', methods=['POST'])
 def attempt_to_connect(machine_name):
-    result = app.machines[machine_name].setup_comm_port()
+    result = app.machines[machine_name].start_serial_comms()
     return jsonify({'connected': result})
 
 
