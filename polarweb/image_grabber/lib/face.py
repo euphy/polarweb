@@ -18,7 +18,6 @@ class Tracking(object):
 
     def observe(self, faces):
         # Match faces up
-        new_faces = {}
         for input_face in faces:
             radial = self.to_radial(input_face)
             face_id, dist = self.closest_face(radial)
@@ -27,7 +26,6 @@ class Tracking(object):
                 face = self.evidence[face_id]
                 face['observations'].append(radial)
                 face['rects'].append(input_face)
-                face['score'] += self.score_boost
 
             else:
                 self.face_id += 1
@@ -39,6 +37,13 @@ class Tracking(object):
                     'rects': [input_face],
                     'score': self.score_initial,
                 }
+
+        # boost the biggest face
+        if self.evidence is not None:
+            biggest = self.faces_by_size()[0]
+            face_id = biggest[0]
+            self.evidence[face_id]['score'] += self.score_boost
+            print "Boosted: %s" % self.evidence[face_id]['score']
 
         # Update faces
         for face_id in self.evidence.keys():
@@ -100,14 +105,17 @@ class Tracking(object):
     def faces_by_size(self):
         return sorted(
             self.evidence.iteritems(),
-            lambda x, y: cmp(x[1]['radial'][2], y[1]['radial'][2])
+            lambda x, y: cmp(y[1]['radial'][2], x[1]['radial'][2])
         )
 
     def face_boundary(self, face_id):
         return self.moving_average(self.evidence[face_id]['rects'])
 
     def highlight_faces(self, frame, scale):
-        for evidence in self.evidence.values():
+        first = True
+        for key, evidence in reversed(self.faces_by_size()):
+            print key
+            print evidence
             (x, y, r) = [int(i*scale) for i in evidence['radial']]
 
             score_r = r * float(evidence['score']) / float(self.score_max)
@@ -117,6 +125,12 @@ class Tracking(object):
                        (0, 255, 0), 1)
             cv2.line(frame, (x, y), (int(x+r*0.7), int(y+r*0.7)),
                      (0, 255, 0), 1)
+
+            if first:
+                cv2.circle(frame, (x, y), int(r),
+                           (255, 255, 255), 6)
+                first = False
+
 
 
 class Framing(object):
@@ -142,6 +156,7 @@ class Framing(object):
         portrait_ratio = ((4 * math.pow(2, 0.5)) - 2.5)
 
         r = min(cx / 2, cy / 2.5, right / 2, bottom / portrait_ratio, r)
+        r = r * 0.7
 
         return (
             int(cx - 2 * r),

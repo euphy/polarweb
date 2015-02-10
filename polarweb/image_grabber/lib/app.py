@@ -1,9 +1,11 @@
 from datetime import datetime
+
 import os
 from random import randint
 
 import cv2
 from PIL import Image
+import numpy as np
 from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.face import Tracking, Framing
 import image as face_image
@@ -18,8 +20,9 @@ class ImageGrabber(object):
     last_highest = 0
 
     def __init__(self,
-                 debug=False, required_score=15, blur=2,
-                 posterize_levels=3, threshold_zoom=0.9, input_image=None):
+                 debug=False, required_score=10, blur=6,
+                 posterize_levels=3, threshold_zoom=0.9,
+                 input_image_filename=None):
 
         self.debug = debug
         self.blur = blur
@@ -28,19 +31,26 @@ class ImageGrabber(object):
 
         path = os.path.split(__file__)[0]
         self.face_cascade = cv2.CascadeClassifier(
-            os.path.join(path, '../resource/haarcascade_frontalface_default.xml'))
+            os.path.join(path,
+                         '../resource/haarcascade_frontalface_default.xml'))
 
         self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
-        self.set_resolution(640, 480)
-
+        # self.set_resolution(1920, 1080) # real size
+        divider = 3
+        self.set_resolution(1920/divider, 1080/divider)
         self.tracking = Tracking()
         self.tracking.score_max = required_score
 
         try:
-            if input_image:
-                self.preloaded_image = Image.open(input_image)
-        except:
-            print "Input image (%s) was not loaded." % input_image
+            if input_image_filename:
+                img = Image.open(input_image_filename)
+                img.thumbnail((max((self.width, self.height)), max((self.width, self.height))), Image.ANTIALIAS)
+                self.preloaded_image = np.array(img)
+            else:
+                self.preloaded_image = None
+        except Exception as e:
+            print e
+            print "Input image (%s) was not loaded." % input_image_filename
             pass
 
     def set_resolution(self, x, y):
@@ -50,28 +60,34 @@ class ImageGrabber(object):
         self.camera.set(3, x)
         self.camera.set(4, y)
 
-    def process_image(self, img):
-        # Blur and dynamically threshold it
-        img = cv2.blur(img, ksize=(self.blur, self.blur))
+    def posterize_image(self, img):
         thresholds = face_image.get_threshold_boundaries(
             img, self.posterize_levels)
         img = face_image.threshold(img, thresholds)
+        return img
+
+    def blur_image(self, img):
+        return cv2.blur(img, ksize=(self.blur, self.blur))
+
+    def process_image(self, img):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        self.save_image_as_file(img, 'png')
+
+        img = self.blur_image(img)
+        self.save_image_as_file(img, 'png')
+
+        img = self.posterize_image(img)
+        self.save_image_as_file(img, 'png')
 
         return img
 
-    def get_image(self, filename=None, rgb_ind=None):
-        self.last_highest = 0
-        indicator_thread = None
-        if rgb_ind:
-            # indicator_thread = FlashColourThread(rgb_ind, 'orange', 0.2, 'black', 2)
-            indicator_thread.start()
 
+    def get_image(self, filename=None):
+        self.last_highest = 0
         if self.debug:
             print "Obtaining face lock..."
 
-        self._wait_for_face_lock(indicator_thread=indicator_thread)
-        if indicator_thread:
-            indicator_thread.stop()
+        self._wait_for_face_lock()
 
         if self.debug:
             print "Face lock obtained"
@@ -79,19 +95,18 @@ class ImageGrabber(object):
         if filename:
             self.save_image_as_file(self.frame, filename)
 
-        if rgb_ind:
-            indicator_thread = FlashColourThread(rgb_ind, 'green', 4, num_of_flashes=1)
-            indicator_thread.start()
+        _, _, portrait_rect = self._isolate_face()
+        crop = face_image.sub_image(self.frame, portrait_rect)
 
-        image = self._isolate_face()
+        # Blur and dynamically threshold it
+        image = self.process_image(crop)
+
         self.close()
 
         if filename:
             filename = self.save_image_as_file(image, filename)
             return filename
 
-        if indicator_thread:
-            indicator_thread.stop()
         return image
 
 
@@ -139,41 +154,49 @@ class ImageGrabber(object):
     def _isolate_face(self):
         # Find the biggest face
         faces = self.tracking.faces_by_size()
+        if not faces:
+            return
         biggest_face_id = faces[0][0]
 
-        framing = Framing(self.gray)
+        face_rect = self.tracking.face_boundary(biggest_face_id)
 
         # Get a tight image around the face
-        face_rect = self.tracking.face_boundary(biggest_face_id)
-        face_img = face_image.sub_image(
-            self.frame, framing.tighten_rect(face_rect, self.threshold_zoom))
+        framing = Framing(self.gray)
+        frame_rect = framing.tighten_rect(face_rect, self.threshold_zoom)
 
         # Get a framed image about the face
-        final_img = face_image.sub_image(
-            self.gray, framing.single_portrait(face_rect))
+        portrait_rect = framing.single_portrait(face_rect)
 
-        # Blur and dynamically threshold it
-        final_img = self.process_image(final_img)
-
-        return final_img
+        return face_rect, \
+               frame_rect, \
+               portrait_rect
 
     def _capture_frame(self):
-        captured = False
-        while not captured:
-            captured, self.frame = self.camera.read()
-
+        if self.preloaded_image is not None:
+            self.frame = self.preloaded_image
+        else:
+            captured = False
+            while not captured:
+                captured, frame = self.camera.read()
+                # rotate the image because the cam is on it's side
+                frame = cv2.transpose(frame)
+                frame = cv2.flip(frame, 0)
+                self.frame = frame
 
         self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        # self.gray = cv2.equalizeHist(self.gray)
         self.faces = self.face_cascade.detectMultiScale(self.gray, 1.3, 5)
 
         self.tracking.observe(self.faces)
 
         return self.frame
 
-    def _wait_for_face_lock(self, indicator_thread=None):
+    def _wait_for_face_lock(self):
         while True:
             print "hi"
-            if not hasattr(self, 'faces') or self.faces == None or len(self.faces) == 0:
+            if (not hasattr(self, 'faces')
+                or self.faces == None
+                or len(self.faces) == 0):
                 self.last_highest = 0
             else:
                 diff = self.tracking.score_max - self.last_highest
@@ -187,15 +210,52 @@ class ImageGrabber(object):
                 return
 
             if self.debug:
-                self.tracking.highlight_faces(self.frame, 1)
+                highlighted = np.copy(self.frame)
+                self.tracking.highlight_faces(highlighted, 1)
 
                 for face in self.faces:
                     (x, y, w, h) = face
-                    cv2.rectangle(
-                        self.frame, (x, y), (x + w, y + h),
-                        (0, 0, 255), 1)
+                    cv2.rectangle(highlighted,
+                                  (x, y),
+                                  (x + w, y + h),
+                                  (0, 0, 255), 1)
 
-                cv2.imshow('frame', self.frame)
+                try:
+                    face_rect, avg, portrait = self._isolate_face()
+                    cv2.rectangle(highlighted,
+                                  (int(avg[0]), int(avg[1])),
+                                  (int(avg[0]+avg[2]),
+                                   int(avg[1]+avg[3])),
+                                  (200, 200, 0),
+                                  2)
+                    cv2.rectangle(highlighted,
+                                  (int(portrait[0]), int(portrait[1])),
+                                  (int(portrait[0]+portrait[2]),
+                                   int(portrait[1]+portrait[3])),
+                                  (255, 255, 0),
+                                  2)
+                except TypeError as te:
+                    print te.message
+                    print "ah!"
+
+                equalized = cv2.cvtColor(cv2.equalizeHist(self.gray),
+                                         cv2.COLOR_GRAY2BGR)
+                blurred = self.blur_image(equalized)
+                posterized = self.posterize_image(blurred)
+
+                # make a composite version
+                height, width, depth = self.frame.shape
+                comp = np.zeros((height,
+                                 width*4,
+                                 depth),
+                                np.uint8)
+
+                comp[:height, :width] = highlighted
+                comp[:height, width:width*2] = equalized
+                comp[:height, width*2:width*3] = blurred
+                comp[:height, width*3:width*4] = posterized
+                cv2.imshow('comp', comp)
+
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 self.close()
