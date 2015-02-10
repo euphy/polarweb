@@ -37,7 +37,7 @@ class Machines(dict):
                            comm_port=v['comm_port'],
                            baud_rate=v['baud_rate'],
                            acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD,
-                           layout_name='3x3')
+                           layout_name='2x2')
             self[p.name] = p
             self.machine_names.append(p.name)
 

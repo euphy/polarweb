@@ -13,14 +13,9 @@ def run(input_img='./sampleinput.png',
         min_path_len=20,
         max_path_count=100,
         smoothing_levels=3,
-        scale=3,
-        rgb_ind=None):
+        scale=3):
     tic = time.clock()
     start_tic = tic
-
-    indicator_thread = None
-    if rgb_ind:
-        pass
 
     # Load image data as bitmap matrix
     image = Image.open(input_img)
@@ -67,8 +62,5 @@ def run(input_img='./sampleinput.png',
     tic = time.clock()
     print "Saved JSON (%s) in %s" % (json_filename, (tic - toc))
     print "Path detection completed in %s" % (tic - start_tic)
-
-    if indicator_thread:
-        indicator_thread.stop()
 
     return paths
