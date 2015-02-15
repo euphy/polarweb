@@ -18,6 +18,8 @@ class Tracking(object):
 
     def observe(self, faces):
         # Match faces up
+
+        faces_now = list()
         for input_face in faces:
             radial = self.to_radial(input_face)
             face_id, dist = self.closest_face(radial)
@@ -26,6 +28,8 @@ class Tracking(object):
                 face = self.evidence[face_id]
                 face['observations'].append(radial)
                 face['rects'].append(input_face)
+                faces_now.append(face_id)
+                print "got face id %s" % face_id
 
             else:
                 self.face_id += 1
@@ -39,11 +43,13 @@ class Tracking(object):
                 }
 
         # boost the biggest face
-        if self.evidence is not None:
+        if self.evidence is not None \
+           and len(self.evidence):
             biggest = self.faces_by_size()[0]
             face_id = biggest[0]
-            self.evidence[face_id]['score'] += self.score_boost
-            print "Boosted: %s" % self.evidence[face_id]['score']
+            if face_id in faces_now:
+                self.evidence[face_id]['score'] += self.score_boost
+                print "Boosted: %s" % self.evidence[face_id]['score']
 
         # Update faces
         for face_id in self.evidence.keys():
@@ -129,6 +135,11 @@ class Tracking(object):
             if first:
                 cv2.circle(frame, (x, y), int(r),
                            (255, 255, 255), 6)
+
+                score_percent = float(evidence['score']) / float(self.score_max) * 100.0
+                cv2.putText(frame, "Locking... %d%%" % score_percent, (5, 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
+
                 first = False
 
 

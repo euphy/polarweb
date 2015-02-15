@@ -30,7 +30,8 @@ def acquire_face_track(p):
     img_filename = grabber.get_image(filename="png")
     print "Got %s" % img_filename
 
-    p.paths.extend(workflow.run(input_img=img_filename))
+    image_paths = workflow.run(input_img=img_filename)
+    p.paths.extend(image_paths)
     if p.paths:
         p.status = 'acquired'
     else:

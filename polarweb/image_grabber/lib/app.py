@@ -20,7 +20,7 @@ class ImageGrabber(object):
     last_highest = 0
 
     def __init__(self,
-                 debug=False, required_score=10, blur=6,
+                 debug=False, required_score=15, blur=6,
                  posterize_levels=3, threshold_zoom=0.9,
                  input_image_filename=None):
 
@@ -254,8 +254,8 @@ class ImageGrabber(object):
                 comp[:height, width:width*2] = equalized
                 comp[:height, width*2:width*3] = blurred
                 comp[:height, width*3:width*4] = posterized
-                cv2.imshow('comp', comp)
 
+                cv2.imshow('comp', comp)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 self.close()
