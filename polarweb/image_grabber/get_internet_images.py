@@ -5,7 +5,7 @@ from polarweb.image_grabber.lib.app import ImageGrabber
 import requests
 
 # make a query, get a list of candidate images
-url = "https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=BELLECHERE"
+url = "https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=manyfaces"
 r = requests.get(url)
 if r.status_code != 200:
     print "Oh no! Error %s" % r.status_code
