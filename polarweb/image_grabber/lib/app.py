@@ -22,7 +22,8 @@ class ImageGrabber(object):
     def __init__(self,
                  debug=False, required_score=15, blur=6,
                  posterize_levels=3, threshold_zoom=0.9,
-                 input_image_filename=None):
+                 input_image_filename=None,
+                 visualise=False):
 
         self.debug = debug
         self.blur = blur
@@ -70,19 +71,25 @@ class ImageGrabber(object):
         return cv2.blur(img, ksize=(self.blur, self.blur))
 
     def process_image(self, img):
+        filenames = dict()
+
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        self.save_image_as_file(img, 'png')
+        filenames['greyscale'] = self.save_image_as_file(img, 'png')
+
+        img = cv2.equalizeHist(img)
+        filenames['equalized'] = self.save_image_as_file(img, 'png')
 
         img = self.blur_image(img)
-        self.save_image_as_file(img, 'png')
+        filenames['blurred'] = self.save_image_as_file(img, 'png')
 
         img = self.posterize_image(img)
-        self.save_image_as_file(img, 'png')
+        filenames['posterized'] = self.save_image_as_file(img, 'png')
+        filenames['final'] = filenames['posterized']
 
-        return img
+        return img, filenames
 
 
-    def get_image(self, filename=None):
+    def get_image(self, filename="png"):
         self.last_highest = 0
         if self.debug:
             print "Obtaining face lock..."
@@ -92,23 +99,27 @@ class ImageGrabber(object):
         if self.debug:
             print "Face lock obtained"
 
+        filenames = dict()
+
         if filename:
-            self.save_image_as_file(self.frame, filename)
+            filenames['raw'] = self.save_image_as_file(self.frame, filename)
 
         _, _, portrait_rect = self._isolate_face()
         crop = face_image.sub_image(self.frame, portrait_rect)
 
         # Blur and dynamically threshold it
-        image = self.process_image(crop)
+        img, fnames = self.process_image(crop)
+        filenames.update(fnames)
 
         self.close()
 
-        if filename:
-            filename = self.save_image_as_file(image, filename)
-            return filename
+        filenames['final'] = self.save_image_as_file(img, filename)
 
-        return image
+        return img, filenames
 
+    def get_images(self, filename=None):
+        im, fnames = self.get_image(filename=filename)
+        return fnames
 
     def save_image_as_file(self, image_array, filename):
         """
@@ -238,7 +249,7 @@ class ImageGrabber(object):
                     print te.message
                     print "ah!"
 
-                equalized = cv2.cvtColor(cv2.equalizeHist(self.gray),
+                equalized = cv2.cvtColor(self.gray,
                                          cv2.COLOR_GRAY2BGR)
                 blurred = self.blur_image(equalized)
                 posterized = self.posterize_image(blurred)

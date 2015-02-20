@@ -26,11 +26,11 @@ def acquire_face_track(p):
     p.camera_lock = True
     p.paths = list()
 
-    grabber = ImageGrabber(debug=True)
-    img_filename = grabber.get_image(filename="png")
-    print "Got %s" % img_filename
+    grabber = ImageGrabber(debug=True, visualise=True)
+    img_filenames = grabber.get_images(filename="png")
+    print "Got images: %s" % img_filenames
 
-    image_paths = workflow.run(input_img=img_filename)
+    image_paths = workflow.run(input_img=img_filenames['final'])
     p.paths.extend(image_paths)
     if p.paths:
         p.status = 'acquired'
