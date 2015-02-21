@@ -8,7 +8,6 @@ from polarweb.pathfinder.smoothing import apply_box_smoothing
 from decimation import subsampling_decimation, anchor_angle_error, \
     total_divergence_error
 
-
 def run(input_img='./sampleinput.png',
         min_path_len=20,
         max_path_count=100,
@@ -64,3 +63,4 @@ def run(input_img='./sampleinput.png',
     print "Path detection completed in %s" % (tic - start_tic)
 
     return paths
+

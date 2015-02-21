@@ -8,20 +8,23 @@ def shutter(frame):
     """
     return np.zeros(frame.shape, np.uint8)
 
-def captioned_image(frame, caption=''):
+def captioned_image(frame, caption=[]):
     """
     Returns the frame with a caption added.
     :param frame:
     :param caption:
     :return:
     """
-    print "Caption: %s" % caption
-    cv2.putText(frame,
-                caption,
-                (5, 25),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.0,
-                (255, 255, 255))
+    # print "Caption: %s" % caption
+    row = 30
+    for line in caption:
+        cv2.putText(frame,
+                    line,
+                    (5, row),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0,
+                    (255, 255, 255))
+        row += 32
     return frame
 
 
