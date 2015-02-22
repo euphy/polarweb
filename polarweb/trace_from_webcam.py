@@ -1,3 +1,4 @@
+import copy
 import threading
 import cv2
 import numpy as np
@@ -76,20 +77,28 @@ def visualise_capture_process(img_filenames, tracing_thread):
     cv2.waitKey(1000)
 
     # Update blank screen with progress reports as long as the thread runs
-    last_now = {'name': None}
+    last_now = {'name': None,
+                'status': None}
     while tracing_thread.is_alive():
         prog, now = tracing_thread.get_progress()
 
         # rebuild the frame if something has changed
-        if now != last_now:
+        if now['status'] != last_now['status']:
+            print "Changed! %s" % now
+            print "(Last: %s)" % last_now
             vector_process_wait = \
                 visualization.captioned_image(visualization.shutter(initial_frame),
                                               caption=["Tracing image...",
                                                        now['name'],
                                                        now['status']])
+            last_now = copy.copy(now)
+        else:
+            print "Not changed: %s" % now
+            print "(Last: %s)" % last_now
+
+
         cv2.imshow('visual', vector_process_wait)
         cv2.waitKey(100)
-        last_now = now
 
 
     print tracing_thread.get_progress()
