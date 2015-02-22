@@ -40,6 +40,7 @@ class PathfinderThread(Thread):
         self.max_path_count = max_path_count
         self.smoothing_levels = smoothing_levels
         self.scale = scale
+        self.filename, ext = os.path.splitext(self.input_img)
 
     def run(self):
         self.progress_stage = 0
@@ -67,7 +68,10 @@ class PathfinderThread(Thread):
         self.progress_stage = 2
         self.progress[self.progress_stage]['status'] = 'Started'
         paths = build_paths(graph)
-        time.sleep(8)
+        svg_filename = self.save_svg(paths, image.size, "00_paths")
+        self.progress[self.progress_stage]['filename'] = svg_filename
+
+        time.sleep(slug_factor*2)
         self.stage_tic = time.clock()
         print "Build paths in %s" % (self.stage_tic - self.stage_start)
         self.progress[self.progress_stage]['status'] = "%ss" % \
@@ -79,6 +83,8 @@ class PathfinderThread(Thread):
         paths = filter_paths(paths,
                              min_length=self.min_path_len,
                              max_paths=self.max_path_count)
+        svg_filename = self.save_svg(paths, image.size, "01_filtered")
+        self.progress[self.progress_stage]['filename'] = svg_filename
         time.sleep(slug_factor)
 
         self.stage_tic = time.clock()
@@ -90,6 +96,8 @@ class PathfinderThread(Thread):
         self.progress[self.progress_stage]['status'] = 'Started'
 
         paths = apply_box_smoothing(paths, passes=3)
+        svg_filename = self.save_svg(paths, image.size, "02_smoothed")
+        self.progress[self.progress_stage]['filename'] = svg_filename
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Smoothed in %s" % (self.stage_tic - self.stage_start)
@@ -103,6 +111,8 @@ class PathfinderThread(Thread):
         paths = subsampling_decimation(paths, total_divergence_error, 5)
         # anchor_angle_error with a low threshold is good for a final cleanup
         paths = subsampling_decimation(paths, anchor_angle_error, 0.05)
+        svg_filename = self.save_svg(paths, image.size, "03_decimated")
+        self.progress[self.progress_stage]['filename'] = svg_filename
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Decimated in %s" % (self.stage_tic - self.stage_start)
@@ -114,6 +124,7 @@ class PathfinderThread(Thread):
 
         # finally remove paths that have been decimated down to two three nodes
         paths = filter_paths(paths, min_length=3)
+        self.progress[self.progress_stage]['filename'] = svg_filename
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Final filter in %s" % (self.stage_tic - self.stage_start)
@@ -122,13 +133,8 @@ class PathfinderThread(Thread):
         self.stage_start = time.clock()
         self.progress_stage = 7
         self.progress[self.progress_stage]['status'] = 'Started'
-
-        name, ext = os.path.splitext(self.input_img)
-        svg_filename = name + '.svg'
-        json_filename = name + '.json'
-
-        paths2svg(paths, image.size, svg_filename, scale=self.scale,
-                  show_nodes=False, outline=True)
+        svg_filename = self.save_svg(paths, image.size, "05_final")
+        self.progress[self.progress_stage]['filename'] = svg_filename
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Saved SVG (%s) in %ss" % (svg_filename, (self.stage_tic - self.stage_start))
@@ -138,6 +144,7 @@ class PathfinderThread(Thread):
         self.progress_stage = 8
         self.progress[self.progress_stage]['status'] = 'Started'
 
+        json_filename = self.filename + '.json'
         paths2json(paths, json_filename)
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
@@ -152,10 +159,20 @@ class PathfinderThread(Thread):
         return paths
 
     def get_progress(self):
-        print "stage: %s" % self.progress_stage
-
         if self.progress_stage != -1:
             self.progress[self.progress_stage]['status'] = "%.2f seconds" % \
                                     (time.clock() - self.stage_start)
 
         return self.progress, self.progress[self.progress_stage]
+
+    def get_result_stage(self, stage):
+        if stage <= self.progress_stage:
+            return self.progress[stage]['filename']
+
+    def save_svg(self, paths, size, suffix):
+        svg_filename = "_".join((self.filename, suffix)) + ".svg"
+        paths2svg(paths, size, svg_filename,
+                  scale=self.scale,
+                  show_nodes=False, outline=True)
+        return svg_filename
+

@@ -13,6 +13,7 @@ def run(input_img='./sampleinput.png',
         max_path_count=100,
         smoothing_levels=3,
         scale=3):
+
     tic = time.clock()
     start_tic = tic
 

@@ -75,10 +75,12 @@ def visualise_capture_process(img_filenames, tracing_thread):
     cv2.imshow('visual', vector_process_wait)
     cv2.waitKey(1000)
 
-    # Update blank screen with progress reports as long as the
+    # Update blank screen with progress reports as long as the thread runs
     last_now = {'name': None}
     while tracing_thread.is_alive():
         prog, now = tracing_thread.get_progress()
+
+        # rebuild the frame if something has changed
         if now != last_now:
             vector_process_wait = \
                 visualization.captioned_image(visualization.shutter(initial_frame),
@@ -87,6 +89,7 @@ def visualise_capture_process(img_filenames, tracing_thread):
                                                        now['status']])
         cv2.imshow('visual', vector_process_wait)
         cv2.waitKey(100)
+        last_now = now
 
 
     print tracing_thread.get_progress()
