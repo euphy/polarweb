@@ -1,6 +1,8 @@
 from importlib import import_module
+import cv2
 from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.pathfinder import workflow
+import numpy as np
 
 
 def get_acquire_func(method_name, module):
@@ -26,7 +28,7 @@ def acquire_face_track(p):
     p.camera_lock = True
     p.paths = list()
 
-    grabber = ImageGrabber(debug=True, visualise=True)
+    grabber = ImageGrabber(debug=False, visualise_capture=True)
     img_filenames = grabber.get_images(filename="png")
     print "Got images: %s" % img_filenames
 
@@ -38,6 +40,9 @@ def acquire_face_track(p):
         print "That attempt to acquire didn't seem to result in any paths."
         p.status = 'idle'
     p.camera_lock = False
+
+def show_visualization_window():
+    cv2.imshow('visual', np.zeros((640, 360, 3)))
 
 def acquire_dummy(p):
     """ Dummy acquisition function.

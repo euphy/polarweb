@@ -1,12 +1,12 @@
-import os
-from flask import Flask, jsonify, render_template, flash, Response, send_file, make_response, request
+from datetime import datetime
+from threading import Thread
+from flask import Flask, jsonify, render_template, flash, Response, \
+    send_file, make_response, request
 from flask_assets import Environment, Bundle
+from flask_socketio import SocketIO, emit
 import time
-import io
-from euclid import Vector2
-from polarweb.models.geometry import Rectangle
+from polarweb.models import acquire
 from polarweb.models.machine import Machines
-
 
 
 app = Flask(__name__)
@@ -25,6 +25,8 @@ assets.register('polarweb_css', css)
 app.debug = True
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
 
+socketio = SocketIO(app)
+
 @app.before_first_request
 def init_machines():
     app.machines = Machines()
@@ -32,14 +34,24 @@ def init_machines():
 # ==================================================================
 #    Routes for HTML
 # ==================================================================
+
+@socketio.on('connect', namespace='/api')
+def connect():
+    emit('my response', {'data': 'Connected', 'count': 0})
+
 @app.route('/')
 def start():
+    visualize()
     return render_template("live.html", machines=app.machines)
 
 
 @app.route('/offline')
 def offline():
     return render_template("offline.html", machines=app.machines)
+
+@app.route('/visualize')
+def visualize():
+    acquire.show_visualization_window()
 
 
 # ==================================================================
@@ -172,4 +184,5 @@ def incoming(machine_name, response_format='json'):
         return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    # app.run(host='0.0.0.0', port=80)
+    socketio.run(app, host='0.0.0.0', port=80)

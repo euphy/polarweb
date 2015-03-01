@@ -7,15 +7,9 @@ from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.pathfinder import workflow
 from polarweb.pathfinder.pathfinder_thread import PathfinderThread
 
-grabber = ImageGrabber(debug=True)
+grabber = ImageGrabber(debug=False)
 img_filenames = grabber.get_images(filename="png")
 print "Got %s" % img_filenames
-
-
-# tracing_thread = \
-#     threading.Thread(target=workflow.run,
-#                      kwargs={'input_img': img_filenames['final']}).start()
-
 
 tracing_thread = PathfinderThread(input_img=img_filenames['final'])
 print tracing_thread.get_progress()
@@ -84,8 +78,6 @@ def visualise_capture_process(img_filenames, tracing_thread):
 
         # rebuild the frame if something has changed
         if now['status'] != last_now['status']:
-            print "Changed! %s" % now
-            print "(Last: %s)" % last_now
             vector_process_wait = \
                 visualization.captioned_image(visualization.shutter(initial_frame),
                                               caption=["Tracing image...",
@@ -96,18 +88,11 @@ def visualise_capture_process(img_filenames, tracing_thread):
             print "Not changed: %s" % now
             print "(Last: %s)" % last_now
 
-
         cv2.imshow('visual', vector_process_wait)
         cv2.waitKey(100)
 
-
     print tracing_thread.get_progress()
     tracing_thread.join()
-
-
-
-
-
 
 visualise_capture_process(img_filenames, tracing_thread)
 # image_paths = workflow.run(input_img=img_filenames['final'])

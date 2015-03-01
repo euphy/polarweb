@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 
 import os
 from random import randint
@@ -23,12 +24,13 @@ class ImageGrabber(object):
                  debug=False, required_score=15, blur=6,
                  posterize_levels=3, threshold_zoom=0.9,
                  input_image_filename=None,
-                 visualise=False):
+                 visualise_capture=True):
 
         self.debug = debug
         self.blur = blur
         self.posterize_levels = posterize_levels
         self.threshold_zoom = threshold_zoom
+        self.visualise_capture = visualise_capture
 
         path = os.path.split(__file__)[0]
         self.face_cascade = cv2.CascadeClassifier(
@@ -100,7 +102,6 @@ class ImageGrabber(object):
             print "Face lock obtained"
 
         filenames = dict()
-
         if filename:
             filenames['raw'] = self.save_image_as_file(self.frame, filename)
 
@@ -110,11 +111,8 @@ class ImageGrabber(object):
         # Blur and dynamically threshold it
         img, fnames = self.process_image(crop)
         filenames.update(fnames)
-
         self.close()
-
         filenames['final'] = self.save_image_as_file(img, filename)
-
         return img, filenames
 
     def get_images(self, filename=None):
@@ -151,6 +149,7 @@ class ImageGrabber(object):
             os.makedirs(path)
 
         print "Saving to %s" % full_file_path
+        print "Im: %s" % im
         im.save(full_file_path)
         return full_file_path
 
@@ -204,14 +203,14 @@ class ImageGrabber(object):
 
     def _wait_for_face_lock(self):
         while True:
-            print "hi"
             if (not hasattr(self, 'faces')
                 or self.faces == None
                 or len(self.faces) == 0):
                 self.last_highest = 0
             else:
                 diff = self.tracking.score_max - self.last_highest
-                print "Diff: %s" % diff
+                if self.debug:
+                    print "Diff: %s" % diff
                 diff = diff / 20.0
             self._capture_frame()
             # time.sleep(1)
@@ -220,53 +219,59 @@ class ImageGrabber(object):
             if self._face_lock_obtained():
                 return
 
-            if self.debug:
+            if self.visualise_capture:
+
                 highlighted = np.copy(self.frame)
                 self.tracking.highlight_faces(highlighted, 1)
+                cv2.imshow('visual', highlighted)
 
-                for face in self.faces:
-                    (x, y, w, h) = face
-                    cv2.rectangle(highlighted,
-                                  (x, y),
-                                  (x + w, y + h),
-                                  (0, 0, 255), 1)
+                if self.debug:
 
-                try:
-                    face_rect, avg, portrait = self._isolate_face()
-                    cv2.rectangle(highlighted,
-                                  (int(avg[0]), int(avg[1])),
-                                  (int(avg[0]+avg[2]),
-                                   int(avg[1]+avg[3])),
-                                  (200, 200, 0),
-                                  2)
-                    cv2.rectangle(highlighted,
-                                  (int(portrait[0]), int(portrait[1])),
-                                  (int(portrait[0]+portrait[2]),
-                                   int(portrait[1]+portrait[3])),
-                                  (255, 255, 0),
-                                  2)
-                except TypeError as te:
-                    print te.message
-                    print "ah!"
+                    for face in self.faces:
+                        (x, y, w, h) = face
+                        cv2.rectangle(highlighted,
+                                      (x, y),
+                                      (x + w, y + h),
+                                      (255, 0, 255), 2)
 
-                equalized = cv2.cvtColor(self.gray,
-                                         cv2.COLOR_GRAY2BGR)
-                blurred = self.blur_image(equalized)
-                posterized = self.posterize_image(blurred)
+                    try:
+                        face_rect, avg, portrait = self._isolate_face()
+                        cv2.rectangle(highlighted,
+                                      (int(avg[0]), int(avg[1])),
+                                      (int(avg[0]+avg[2]),
+                                       int(avg[1]+avg[3])),
+                                      (200, 200, 0),
+                                      2)
+                        cv2.rectangle(highlighted,
+                                      (int(portrait[0]), int(portrait[1])),
+                                      (int(portrait[0]+portrait[2]),
+                                       int(portrait[1]+portrait[3])),
+                                      (255, 255, 0),
+                                      2)
+                    except TypeError as te:
+                        print te.message
+                        print "ah! There was no face to be found!"
 
-                # make a composite version
-                height, width, depth = self.frame.shape
-                comp = np.zeros((height,
-                                 width*4,
-                                 depth),
-                                np.uint8)
+                    equalized = cv2.cvtColor(self.gray,
+                                             cv2.COLOR_GRAY2BGR)
+                    blurred = self.blur_image(equalized)
+                    posterized = self.posterize_image(blurred)
 
-                comp[:height, :width] = highlighted
-                comp[:height, width:width*2] = equalized
-                comp[:height, width*2:width*3] = blurred
-                comp[:height, width*3:width*4] = posterized
+                    # make a composite version
+                    height, width, depth = self.frame.shape
+                    comp = np.zeros((height,
+                                     width*4,
+                                     depth),
+                                    np.uint8)
 
-                cv2.imshow('comp', comp)
+                    comp[:height, :width] = highlighted
+                    comp[:height, width:width*2] = equalized
+                    comp[:height, width*2:width*3] = blurred
+                    comp[:height, width*3:width*4] = posterized
+
+                    cv2.imshow('comp', comp)
+
+
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 self.close()

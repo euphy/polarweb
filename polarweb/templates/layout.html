@@ -40,6 +40,8 @@
                     <a href="api/m/{{machine_name}}/layout/svg">
                     <img src="api/m/{{machine_name}}/layout/svg" width="30%"></a>
 
+                    <h2>Receive:</h2>
+                    <div id="log"></div>
 
                     <h3>Rescue:</h3>
                     <button type="submit" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/calibrate', function(data){
@@ -140,17 +142,33 @@
                         $('#state-{{machine_name}}').load('api/m/{{machine_name}}');
                         $('#queue-{{machine_name}}').load('api/m/{{machine_name}}/queue/html');
                         $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');
-
-                        setInterval(function() { $('#state-{{machine_name}}').load('api/m/{{machine_name}}');
-                         $('#queue-{{machine_name}}').load('api/m/{{machine_name}}/queue/html');
-                         $('#received_log-{{machine_name}}').load('api/m/{{machine_name}}/incoming/html');
-                         }, 20000);
                     </script>
+<script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function(){
+        namespace = '/api'; // change to an empty string to use the global namespace
+
+        // the socket.io documentation recommends sending an explicit package upon connection
+        // this is specially important when using the global namespace
+        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+        socket.on('connect', function() {
+            socket.emit('my event', {data: 'I\'m connected!'});
+        });
+
+        // event handler for server sent data
+        // the data is displayed in the "Received" section of the page
+        socket.on('my response', function(msg) {
+            $('#log').append('<br>Received #' + msg.count + ': ' + msg.data);
+        });
+    });
+</script>
                     <p>Connected: <span id="connected-{{machine_name}}">{{machines[machine_name].connected}}</span></p>
                     <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/connect', function(data){
                     console.log(data.connected);
                     $('#connected-{{machine_name}}').html(data);
                     }, 'json');">Reconnect</button>
+
 				</div>
             {% endfor %}
 			</div>

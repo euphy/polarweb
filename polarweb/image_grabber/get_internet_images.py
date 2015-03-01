@@ -21,5 +21,5 @@ for result in j['responseData']['results']:
         f.write(StringIO(image_data.content).read())
     print
 
-    grabber = ImageGrabber(debug=True, input_image_filename=file_name_string)
+    grabber = ImageGrabber(debug=False, input_image_filename=file_name_string)
     grabber.get_image(filename="png")

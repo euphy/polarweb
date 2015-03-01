@@ -12,6 +12,8 @@ class Tracking(object):
     score_boost = 2
     score_max = 50
 
+    debug = False
+
     def __init__(self):
         self.evidence = {}
         self.face_id = 0
@@ -29,7 +31,8 @@ class Tracking(object):
                 face['observations'].append(radial)
                 face['rects'].append(input_face)
                 faces_now.append(face_id)
-                print "got face id %s" % face_id
+                if self.debug:
+                    print "got face id %s" % face_id
 
             else:
                 self.face_id += 1
@@ -43,13 +46,12 @@ class Tracking(object):
                 }
 
         # boost the biggest face
-        if self.evidence is not None \
-           and len(self.evidence):
+        if self.evidence is not None and len(self.evidence):
             biggest = self.faces_by_size()[0]
             face_id = biggest[0]
             if face_id in faces_now:
                 self.evidence[face_id]['score'] += self.score_boost
-                print "Boosted: %s" % self.evidence[face_id]['score']
+                print "Boosted id %s to %s" % (face_id, self.evidence[face_id]['score'])
 
         # Update faces
         for face_id in self.evidence.keys():
@@ -109,19 +111,22 @@ class Tracking(object):
         return min_face_id, min_dist
 
     def faces_by_size(self):
-        return sorted(
+        l = list(sorted(
             self.evidence.iteritems(),
             lambda x, y: cmp(y[1]['radial'][2], x[1]['radial'][2])
-        )
+        ))
+
+        if self.debug:
+            print [i[0] for i in l]
+
+        return l
 
     def face_boundary(self, face_id):
         return self.moving_average(self.evidence[face_id]['rects'])
 
-    def highlight_faces(self, frame, scale):
+    def highlight_faces(self, frame, scale, debug=False):
         first = True
-        for key, evidence in reversed(self.faces_by_size()):
-            print key
-            print evidence
+        for key, evidence in self.faces_by_size():
             (x, y, r) = [int(i*scale) for i in evidence['radial']]
 
             score_r = r * float(evidence['score']) / float(self.score_max)
@@ -129,12 +134,27 @@ class Tracking(object):
                        (0, 255, 0), 2)
             cv2.circle(frame, (x, y), int(score_r),
                        (0, 255, 0), 1)
-            cv2.line(frame, (x, y), (int(x+r*0.7), int(y+r*0.7)),
-                     (0, 255, 0), 1)
+
+            y_offset = y + int(r) + 25
+            text_col = (255, 255, 255)
+            cv2.putText(frame, "id: %s" % key, (x, y_offset),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_col)
+            y_offset += 16
+            cv2.putText(frame, "size: %s" % r, (x, y_offset),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_col)
+            y_offset += 16
+            cv2.putText(frame, "score: %s" % evidence['score'], (x, y_offset),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_col)
+
+            if debug:
+                cv2.line(frame, (x, y), (int(x+r*0.7), int(y+r*0.7)),
+                         (0, 255, 0), 1)
 
             if first:
                 cv2.circle(frame, (x, y), int(r),
-                           (255, 255, 255), 6)
+                           (255, 255, 255), 5)
+                cv2.circle(frame, (x, y), int(r)+4,
+                           (0, 0, 0), 2)
 
                 score_percent = float(evidence['score']) / float(self.score_max) * 100.0
                 cv2.putText(frame, "Locking... %d%%" % score_percent, (5, 25),
