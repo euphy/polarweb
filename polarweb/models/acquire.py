@@ -1,8 +1,10 @@
 from importlib import import_module
 import cv2
+from polarweb import visualization
 from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.pathfinder import workflow
 import numpy as np
+from polarweb.pathfinder.pathfinder_thread import PathfinderThread
 
 
 def get_acquire_func(method_name, module):
@@ -28,12 +30,23 @@ def acquire_face_track(p):
     p.camera_lock = True
     p.paths = list()
 
-    grabber = ImageGrabber(debug=False, visualise_capture=True)
+    grabber = ImageGrabber(debug=False)
     img_filenames = grabber.get_images(filename="png")
-    print "Got images: %s" % img_filenames
+    print "Got %s" % img_filenames
 
-    image_paths = workflow.run(input_img=img_filenames['final'])
-    p.paths.extend(image_paths)
+    tracing_thread = PathfinderThread(input_img=img_filenames['final'])
+    print tracing_thread.get_progress()
+    tracing_thread.start()
+
+    image_paths = \
+        visualization.visualise_capture_process(img_filenames, tracing_thread)
+
+    # grabber = ImageGrabber(debug=False, visualise_capture=True)
+    # img_filenames = grabber.get_images(filename="png")
+    # print "Got images: %s" % img_filenames
+    #
+    # image_paths = workflow.run(input_img=img_filenames['final'])
+    p.paths.extend(image_paths[''])
     if p.paths:
         p.status = 'acquired'
     else:

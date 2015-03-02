@@ -155,6 +155,7 @@ class PathfinderThread(Thread):
                                         (self.stage_tic - self.stage_start)
         self.progress_stage = 9
         self.progress[self.progress_stage]['status'] = 'Started'
+        self.progress[self.progress_stage]['paths'] = paths
 
         return paths
 
@@ -175,4 +176,5 @@ class PathfinderThread(Thread):
                   scale=self.scale,
                   show_nodes=False, outline=True)
         return svg_filename
+
 

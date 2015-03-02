@@ -70,7 +70,9 @@ class ImageGrabber(object):
         return img
 
     def blur_image(self, img):
-        return cv2.blur(img, ksize=(self.blur, self.blur))
+        proportionate_blur = int((img.shape[1] / 30.0)+0.5)
+        print "Blur level: %s" % proportionate_blur
+        return cv2.blur(img, ksize=(proportionate_blur, proportionate_blur))
 
     def process_image(self, img):
         filenames = dict()
