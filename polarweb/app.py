@@ -1,12 +1,14 @@
 from datetime import datetime
+import json
 from threading import Thread
 from flask import Flask, jsonify, render_template, flash, Response, \
     send_file, make_response, request
 from flask_assets import Environment, Bundle
 from flask_socketio import SocketIO, emit
 import time
+import jinja2
 from polarweb.models import acquire
-from polarweb.models.machine import Machines
+from polarweb.models.machines import Machines
 
 
 app = Flask(__name__)
@@ -22,14 +24,39 @@ css = Bundle('../bower_components/bootstrap/dist/css/bootstrap.css',
              output='polarweb.css')
 assets.register('polarweb_css', css)
 
-app.debug = True
+# app.debug = True
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
 
 socketio = SocketIO(app)
 
-@app.before_first_request
 def init_machines():
-    app.machines = Machines()
+    visualize()
+    app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller)
+
+
+def format_for_web(target, value):
+    command = target.split('-')[0]
+    if command in ('queue', 'received_log'):
+        env = jinja2.Environment(
+            loader=jinja2.PackageLoader('polarweb', 'templates'))
+        template = env.get_template('queue.html')
+        print "Rendering %s" % target
+        return template.render(queue=value)
+    else:
+        return json.dumps(value)
+
+
+def outgoing_event_signaller(event):
+    print "Event: %s" % event
+    try:
+        html = format_for_web(event['target'], event['value'])
+        socketio.emit('my response',
+                      {'target': event['target'],
+                       'html': html},
+                      namespace='/api')
+    except RuntimeError:
+        print "Failed."
+
 
 # ==================================================================
 #    Routes for HTML
@@ -41,7 +68,7 @@ def connect():
 
 @app.route('/')
 def start():
-    visualize()
+    print "On"
     return render_template("live.html", machines=app.machines)
 
 
@@ -49,9 +76,12 @@ def start():
 def offline():
     return render_template("offline.html", machines=app.machines)
 
-@app.route('/visualize')
-def visualize():
-    acquire.show_visualization_window()
+@app.route('/visualize/<state>')
+def visualize(state='show'):
+    if state is "hide":
+        acquire.control_visualization_window(False)
+    else:
+        acquire.control_visualization_window(True)
 
 
 # ==================================================================
@@ -183,6 +213,13 @@ def incoming(machine_name, response_format='json'):
     else:
         return jsonify(result)
 
+
+# Set up a listener on app.machines.* that will react to changes
+
+
+
+
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=80)
+    init_machines()
     socketio.run(app, host='0.0.0.0', port=80)

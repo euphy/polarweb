@@ -18,34 +18,34 @@ def get_acquire_func(method_name, module):
     mod = import_module(module)
     return getattr(mod, method_name)
 
-def acquire_face_track(p):
+def acquire_face_track(p, event_callback=None):
     """
     Method that will acquire an image to draw.
     """
     if p.camera_lock:
         print "Camera is locked. Cancelling. But do try again please!"
         p.status = 'idle'
+        event_callback({'capture_status-%s' % p.name: "Locked."})
         return {'http_code': 503}
-
+    else:
+        event_callback({'capture_status-%s' % p.name: "Acquiring..."})
     p.camera_lock = True
     p.paths = list()
 
     grabber = ImageGrabber(debug=False)
     img_filenames = grabber.get_images(filename="png")
     print "Got %s" % img_filenames
+    event_callback({'capture_status-%s' % p.name: "Got images."})
 
-    tracing_thread = PathfinderThread(input_img=img_filenames['final'])
+    tracing_thread = PathfinderThread(input_img=img_filenames['final'],
+                                      event_callback=event_callback)
     print tracing_thread.get_progress()
     tracing_thread.start()
+
 
     image_paths = \
         visualization.visualise_capture_process(img_filenames, tracing_thread)
 
-    # grabber = ImageGrabber(debug=False, visualise_capture=True)
-    # img_filenames = grabber.get_images(filename="png")
-    # print "Got images: %s" % img_filenames
-    #
-    # image_paths = workflow.run(input_img=img_filenames['final'])
     p.paths.extend(image_paths[''])
     if p.paths:
         p.status = 'acquired'
@@ -54,8 +54,11 @@ def acquire_face_track(p):
         p.status = 'idle'
     p.camera_lock = False
 
-def show_visualization_window():
-    cv2.imshow('visual', np.zeros((640, 360, 3)))
+def control_visualization_window(show):
+    if show:
+        cv2.namedWindow('visual')
+    else:
+        cv2.destroyWindow('visual')
 
 def acquire_dummy(p):
     """ Dummy acquisition function.

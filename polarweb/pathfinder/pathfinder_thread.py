@@ -33,7 +33,8 @@ class PathfinderThread(Thread):
             min_path_len=20,
             max_path_count=100,
             smoothing_levels=3,
-            scale=3):
+            scale=3,
+            event_callback=None):
         Thread.__init__(self)
         self.input_img = input_img
         self.min_path_len = min_path_len
@@ -41,6 +42,9 @@ class PathfinderThread(Thread):
         self.smoothing_levels = smoothing_levels
         self.scale = scale
         self.filename, ext = os.path.splitext(self.input_img)
+        self.event_callback = event_callback
+
+        print "STart tracing thread."
 
     def run(self):
         self.progress_stage = 0

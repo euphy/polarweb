@@ -104,8 +104,9 @@ def visualise_capture_process(img_filenames, tracing_thread):
                                          now['status']])
             last_now = copy.copy(now)
         else:
-            print "Not changed: %s" % now
-            print "(Last: %s)" % last_now
+            # print "Not changed: %s" % now
+            # print "(Last: %s)" % last_now
+            pass
 
         cv2.imshow('visual', vector_process_wait)
         cv2.waitKey(100)

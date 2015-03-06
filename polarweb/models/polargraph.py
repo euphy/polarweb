@@ -4,49 +4,17 @@ General model of the machine, including its communications route.
 from collections import deque
 from datetime import datetime
 import os
+import random
+import string
 import time
 import thread
 
 import serial
 from euclid import Vector2
-from serial.tools import list_ports
 
-from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.models import acquire
 from polarweb.pathfinder import paths2svg
 from polarweb.models.geometry import Rectangle, Layout
-from polarweb.pathfinder import workflow
-
-from polarweb.config import SETTINGS
-
-class Machines(dict):
-
-    default_page = SETTINGS.PAGES[SETTINGS.DEFAULT_PAGE]
-    default_page['name'] = SETTINGS.DEFAULT_PAGE
-
-    def __init__(self, *args, **kwargs):
-        super(Machines, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-        self.list_ports()
-        self.machine_names = []
-        for k, v in SETTINGS.MACHINES.items():
-            p = Polargraph(name=k,
-                           extent=v['extent'],
-                           page=SETTINGS.PAGES[v['default_page']],
-                           comm_port=v['comm_port'],
-                           baud_rate=v['baud_rate'],
-                           acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD,
-                           layout_name='2x2')
-            self[p.name] = p
-            self.machine_names.append(p.name)
-
-
-    def list_ports(self):
-        self.ports = list(list_ports.comports())
-        print "Com ports: %s" % self.ports
-        return self.ports
-
 
 class Polargraph():
     """
@@ -67,12 +35,15 @@ class Polargraph():
 
     camera_lock = False
 
+    last_seen = dict()
+
     def __init__(self,
                  name, extent, page,
                  comm_port=None,
                  baud_rate=9600,
                  acquire_method=None,
-                 layout_name='3x3'):
+                 layout_name='3x3',
+                 event_callback=None):
         self.name = name
         self.extent = extent
         self.current_page = page
@@ -109,7 +80,14 @@ class Polargraph():
         self.start_serial_comms()
 
         # and the event update_status
-        drawing_thread = thread.start_new_thread(self.update_status, (2,))
+        drawing_thread = thread.start_new_thread(self.update_status, (0.5,))
+        if event_callback is not None:
+            self.event_callback = event_callback
+            self.event_thread = \
+                thread.start_new_thread(self.event_monitor,
+                                        (2, self.event_callback))
+        else:
+            self.event_callback = None
 
         self.commands = {'pen_up': 'C14,20,END',
                          'pen_down': 'C13,130,END'}
@@ -124,6 +102,46 @@ class Polargraph():
                 self.can_acquire = True
             except:
                 self.can_acquire = False
+
+        print "Initialised: %s." % self
+
+    monitor = ('name',
+               'status',
+               'queue_running',
+               'calibrated',
+               'ready',
+               'last_move',
+               'contacted',
+               'page',
+               'camera_in_use',
+               'current panel',
+               'layout design',
+               'comm port')
+
+    def event_monitor(self, freq, callback):
+        print "starting event monitor thread"
+        while True:
+            updated = list()
+            # 1. Look for changed elements
+            for name in self.monitor:
+                try:
+                    current = getattr(self, name)
+                    if name not in self.last_seen \
+                            or self.last_seen[name] != current:
+                        self.last_seen[name] = current
+                        updated.append({'target': '%s-%s' % (name, self.name),
+                                        'value': current})
+                except AttributeError:
+                    continue
+
+            # 2. Run callback on each one
+            for each in updated:
+                callback(each)
+
+            if freq:
+                time.sleep(freq)
+
+
 
     def start_serial_comms(self):
         """
@@ -194,7 +212,6 @@ class Polargraph():
         behaves when, for instance, the queue empties and there's no lines
         left to dispatch.
 
-
         """
         print '%s Status: %s' % (self.name, self.status)
         while True:
@@ -255,8 +272,10 @@ class Polargraph():
             except ValueError:
                 pass
 
+            #self.queue.appendleft(''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(4)]))
             if freq:
                 time.sleep(freq)
+
 
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
@@ -338,7 +357,7 @@ class Polargraph():
             self.auto_acquire = False
         elif command == 'now':
             result = self.state()
-            ac = self.acquire(self)
+            ac = self.acquire(self, self.event_callback)
             if ac:
                 result.update(ac)
             return result
@@ -355,14 +374,14 @@ class Polargraph():
             self.queue_running = False
         elif command == 'cancel_panel':
             self.queue.clear()
-            self.queue.append("C14,0,END")  # pen lift
+            self.queue.append(self.commands['pen_up'])  # pen lift
             self.layout.remove_current_panel()
             self.status = 'idle'
         elif command == 'cancel_page':
             self.queue.clear()
             self.queue_running = False
             self.layout.clear_panels()
-            self.queue.append("C14,0,END")  # pen lift
+            self.queue.append(self.commands['pen_up'])  # pen lift
             self.status = 'waiting_for_new_layout'
         elif command == 'reuse_panel':
             self.queue.clear()
@@ -499,7 +518,7 @@ class Polargraph():
                 else:
                     result.append("C17,%.0f,%.0f,8,END" % (point[0], point[1]))
 
-        result.append("C14,20,END")
+        result.append(self.commands['pen_up'])
 
         return result
 

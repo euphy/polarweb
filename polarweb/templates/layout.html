@@ -41,7 +41,7 @@
                     <img src="api/m/{{machine_name}}/layout/svg" width="30%"></a>
 
                     <h2>Receive:</h2>
-                    <div id="log"></div>
+                    <div id="capture_status-{{machine_name}}"></div>
 
                     <h3>Rescue:</h3>
                     <button type="submit" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/calibrate', function(data){
@@ -159,7 +159,10 @@
         // event handler for server sent data
         // the data is displayed in the "Received" section of the page
         socket.on('my response', function(msg) {
-            $('#log').append('<br>Received #' + msg.count + ': ' + msg.data);
+            console.log('Looking for: #'+msg.target);
+            console.log('Found: ' + $('#'+msg.target));
+            console.log('Want to change to: ' + msg.html);
+            $('#'+msg.target).html(msg.html);
         });
     });
 </script>
