@@ -43,7 +43,8 @@ class Polargraph():
                  baud_rate=9600,
                  acquire_method=None,
                  layout_name='3x3',
-                 event_callback=None):
+                 event_callback=None,
+                 viz=None):
         self.name = name
         self.extent = extent
         self.current_page = page
@@ -75,6 +76,7 @@ class Polargraph():
         self.position = None
 
         self.paths = None
+        self.viz = viz
 
         # Init the serial io
         self.start_serial_comms()
@@ -227,11 +229,11 @@ class Polargraph():
 
                 elif self.status == 'acquiring':
                     try:
-                        self.acquire()
+                        print "self.status == 'acquiring'"
+                        self.acquire(self, self.event_callback)
                     except:
                         print "Exception occurred when attempting to " \
                               "acquire some artwork."
-
 
                 elif self.status == 'acquired':
                     if not self.paths:
@@ -356,11 +358,12 @@ class Polargraph():
             self.status = 'idle'
             self.auto_acquire = False
         elif command == 'now':
-            result = self.state()
-            ac = self.acquire(self, self.event_callback)
-            if ac:
-                result.update(ac)
-            return result
+            self.status = 'acquiring'
+            # result = self.state()
+            # ac = self.acquire(self, self.event_callback)
+            # if ac:
+            #     result.update(ac)
+            # return result
 
         return self.state()
 

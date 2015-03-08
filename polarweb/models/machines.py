@@ -2,13 +2,12 @@ from serial.tools import list_ports
 from polarweb.config import SETTINGS
 from polarweb.models.polargraph import Polargraph
 
-
 class Machines(dict):
 
     default_page = SETTINGS.PAGES[SETTINGS.DEFAULT_PAGE]
     default_page['name'] = SETTINGS.DEFAULT_PAGE
 
-    def __init__(self, outgoing_event_signaller=None, *args, **kwargs):
+    def __init__(self, outgoing_event_signaller=None, viz_thread=None, *args, **kwargs):
         super(Machines, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
@@ -22,7 +21,8 @@ class Machines(dict):
                            baud_rate=v['baud_rate'],
                            acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD,
                            layout_name='2x2',
-                           event_callback=outgoing_event_signaller)
+                           event_callback=outgoing_event_signaller,
+                           viz=viz_thread)
             self[p.name] = p
             self.machine_names.append(p.name)
 
@@ -31,3 +31,4 @@ class Machines(dict):
         self.ports = list(list_ports.comports())
         print "Com ports: %s" % self.ports
         return self.ports
+

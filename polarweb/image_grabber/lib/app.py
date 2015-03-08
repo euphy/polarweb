@@ -19,12 +19,14 @@ class ImageGrabber(object):
     gray = None
     faces = None
     last_highest = 0
+    viz = None
 
     def __init__(self,
                  debug=False, required_score=15, blur=6,
                  posterize_levels=3, threshold_zoom=0.9,
                  input_image_filename=None,
-                 visualise_capture=True):
+                 visualise_capture=True,
+                 viz=None):
 
         self.debug = debug
         self.blur = blur
@@ -43,6 +45,8 @@ class ImageGrabber(object):
         self.set_resolution(1920/divider, 1080/divider)
         self.tracking = Tracking()
         self.tracking.score_max = required_score
+
+        self.viz = viz
 
         try:
             if input_image_filename:
@@ -113,7 +117,7 @@ class ImageGrabber(object):
         # Blur and dynamically threshold it
         img, fnames = self.process_image(crop)
         filenames.update(fnames)
-        self.close()
+        # self.close()
         filenames['final'] = self.save_image_as_file(img, filename)
         return img, filenames
 
@@ -151,7 +155,6 @@ class ImageGrabber(object):
             os.makedirs(path)
 
         print "Saving to %s" % full_file_path
-        print "Im: %s" % im
         im.save(full_file_path)
         return full_file_path
 
@@ -225,10 +228,10 @@ class ImageGrabber(object):
 
                 highlighted = np.copy(self.frame)
                 self.tracking.highlight_faces(highlighted, 1)
-                cv2.imshow('visual', highlighted)
+                self.viz.imshow(highlighted)
 
+                # cv2.imshow('visual', highlighted)
                 if self.debug:
-
                     for face in self.faces:
                         (x, y, w, h) = face
                         cv2.rectangle(highlighted,
@@ -273,9 +276,7 @@ class ImageGrabber(object):
 
                     cv2.imshow('comp', comp)
 
-
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(20) & 0xFF == ord('q'):
                 self.close()
                 raise Exception('User requested quit')
 

@@ -1,14 +1,17 @@
 from datetime import datetime
 import json
 from threading import Thread
+import cv2
 from flask import Flask, jsonify, render_template, flash, Response, \
     send_file, make_response, request
 from flask_assets import Environment, Bundle
 from flask_socketio import SocketIO, emit
 import time
 import jinja2
+from polarweb import visualization
 from polarweb.models import acquire
 from polarweb.models.machines import Machines
+from polarweb.visualization import VisualizationThread
 
 
 app = Flask(__name__)
@@ -30,8 +33,11 @@ app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83
 socketio = SocketIO(app)
 
 def init_machines():
+    app.viz = VisualizationThread()
+    app.viz.start()
     visualize()
-    app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller)
+    app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
+                            viz_thread=app.viz)
 
 
 def format_for_web(target, value):
@@ -46,8 +52,18 @@ def format_for_web(target, value):
         return json.dumps(value)
 
 
-def outgoing_event_signaller(event):
+def outgoing_event_signaller(event=None, target=None, value=None):
+    if event is None:
+        event = dict()
+    if target is not None:
+        event['target'] = target
+    if value is not None:
+        event['value'] = value
+
     print "Event: %s" % event
+    if 'target' not in event and 'value' not in event:
+        return False
+
     try:
         html = format_for_web(event['target'], event['value'])
         socketio.emit('my response',
@@ -56,6 +72,13 @@ def outgoing_event_signaller(event):
                       namespace='/api')
     except RuntimeError:
         print "Failed."
+        return False
+    except Exception as e:
+        print "Exception in outgoing_event_signaller: %s" % e.message
+        return False
+
+    return True
+
 
 
 # ==================================================================
@@ -79,9 +102,9 @@ def offline():
 @app.route('/visualize/<state>')
 def visualize(state='show'):
     if state is "hide":
-        acquire.control_visualization_window(False)
+        app.viz.window(False)
     else:
-        acquire.control_visualization_window(True)
+        app.viz.window(True)
 
 
 # ==================================================================
@@ -135,6 +158,7 @@ def get_layout(machine_name):
     print app.machines[machine_name].current_layout['name']
     return jsonify({'name': app.machines[machine_name].current_layout['name']})
 
+
 @app.route('/api/m/<machine_name>/layout/svg', methods=['GET'])
 def get_layout_svg(machine_name):
     svg_filename = app.machines[machine_name].get_available_panels_as_svg()
@@ -164,6 +188,7 @@ def control_drawing(machine_name, command):
     result = app.machines[machine_name].control_drawing(command)
     return jsonify(result)
 
+
 @app.route('/api/m/<machine_name>/speed', methods=['POST'])
 def control_speed(machine_name):
     """
@@ -172,6 +197,7 @@ def control_speed(machine_name):
     result = app.machines[machine_name].control_movement(data={'speed': str(request.form['speed-input']),
                                                                'accel': str(request.form['accel-input'])})
     return jsonify(result)
+
 
 @app.route('/api/m/<machine_name>/pen/<command>', methods=['POST'])
 def control_pen(machine_name, command):
@@ -214,12 +240,6 @@ def incoming(machine_name, response_format='json'):
         return jsonify(result)
 
 
-# Set up a listener on app.machines.* that will react to changes
-
-
-
-
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=80)
     init_machines()
     socketio.run(app, host='0.0.0.0', port=80)

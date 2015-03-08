@@ -1,8 +1,26 @@
 import copy
+from threading import Thread
 import cv2
 import numpy as np
 
+class VisualizationThread(Thread):
 
+    def __init__(self, name='visual'):
+        Thread.__init__(self)
+        self.window_name = name
+
+    def imshow(self, frame):
+        cv2.imshow(self.window_name, frame)
+
+    def run(self):
+        while True:
+            pass
+
+    def window(self, show):
+        if show:
+            cv2.namedWindow('visual')
+        else:
+            cv2.destroyWindow('visual')
 
 def shutter(frame):
     """ Return a black image.
@@ -113,4 +131,5 @@ def visualise_capture_process(img_filenames, tracing_thread):
 
     tracing_thread.join()
     prog, now = tracing_thread.get_progress()
+    cv2.destroyWindow('visual')
     return now['paths']

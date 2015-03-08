@@ -40,8 +40,14 @@
                     <a href="api/m/{{machine_name}}/layout/svg">
                     <img src="api/m/{{machine_name}}/layout/svg" width="30%"></a>
 
-                    <h2>Receive:</h2>
-                    <div id="capture_status-{{machine_name}}"></div>
+                    <h3>Capture status: <span id="capture_status-{{machine_name}}"></span></h3>
+                    <h3>Status: <span id="status-{{machine_name}}"></span></h3>
+                    <h3>name: <span id="name-{{machine_name}}"></span></h3>
+                    <h3>queue_running: <span id="queue_running-{{machine_name}}"></span></h3>
+                    <h3>calibrated: <span id="calibrated-{{machine_name}}"></span></h3>
+                    <h3>ready: <span id="ready-{{machine_name}}"></span></h3>
+                    <h3>last_move: <span id="last_move-{{machine_name}}"></span></h3>
+                    <h3>contacted: <span id="contacted-{{machine_name}}"></span></h3>
 
                     <h3>Rescue:</h3>
                     <button type="submit" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/calibrate', function(data){
