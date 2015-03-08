@@ -18,7 +18,7 @@ def get_acquire_func(method_name, module):
     mod = import_module(module)
     return getattr(mod, method_name)
 
-def acquire_face_track(p, event_callback=None):
+def acquire_face_track(p, event_callback=None, viz=None):
     """
     Method that will acquire an image to draw.
     """
@@ -35,7 +35,7 @@ def acquire_face_track(p, event_callback=None):
     p.camera_lock = True
     p.paths = list()
 
-    grabber = ImageGrabber(debug=False, viz=p.viz)
+    grabber = ImageGrabber(debug=False, viz=viz)
     img_filenames = grabber.get_images(filename="png")
     event_callback(target='capture_status-%s' % p.name,
                    value='Got images.')

@@ -3,9 +3,11 @@ General model of the machine, including its communications route.
 """
 from collections import deque
 from datetime import datetime
+import multiprocessing
 import os
 import random
 import string
+import threading
 import time
 import thread
 
@@ -15,6 +17,19 @@ from euclid import Vector2
 from polarweb.models import acquire
 from polarweb.pathfinder import paths2svg
 from polarweb.models.geometry import Rectangle, Layout
+
+def update_machine_status(freq, p, viz):
+    while True:
+        p.update_status(viz)
+        if freq:
+            time.sleep(freq)
+
+def event_monitor(freq, p):
+    while True:
+        p.send_events(p.event_callback)
+        if freq:
+            time.sleep(freq)
+
 
 class Polargraph():
     """
@@ -76,18 +91,26 @@ class Polargraph():
         self.position = None
 
         self.paths = None
-        self.viz = viz
+        # self.viz = viz
 
         # Init the serial io
         self.start_serial_comms()
 
         # and the event update_status
-        drawing_thread = thread.start_new_thread(self.update_status, (0.5,))
+        # drawing_thread = thread.start_new_thread(self.update_status, (0.5,))
+        # drawing_process = thread.start_new_thread(update_machine_status,
+        #                                           (0.5, self))
+        drawing_process = threading.Thread(target=update_machine_status,
+                                           args=(0.5, self, viz))
+        drawing_process.start()
         if event_callback is not None:
             self.event_callback = event_callback
-            self.event_thread = \
-                thread.start_new_thread(self.event_monitor,
-                                        (2, self.event_callback))
+            event_monitor_process = threading.Thread(target=event_monitor,
+                                                            args=(2, self))
+            event_monitor_process.start()
+            # self.event_thread = \
+            #     thread.start_new_thread(self.event_monitor,
+            #                             (2, self.event_callback))
         else:
             self.event_callback = None
 
@@ -120,28 +143,24 @@ class Polargraph():
                'layout design',
                'comm port')
 
-    def event_monitor(self, freq, callback):
+    def send_events(self, callback):
         print "starting event monitor thread"
-        while True:
-            updated = list()
-            # 1. Look for changed elements
-            for name in self.monitor:
-                try:
-                    current = getattr(self, name)
-                    if name not in self.last_seen \
-                            or self.last_seen[name] != current:
-                        self.last_seen[name] = current
-                        updated.append({'target': '%s-%s' % (name, self.name),
-                                        'value': current})
-                except AttributeError:
-                    continue
+        updated = list()
+        # 1. Look for changed elements
+        for name in self.monitor:
+            try:
+                current = getattr(self, name)
+                if name not in self.last_seen \
+                        or self.last_seen[name] != current:
+                    self.last_seen[name] = current
+                    updated.append({'target': '%s-%s' % (name, self.name),
+                                    'value': current})
+            except AttributeError:
+                continue
 
-            # 2. Run callback on each one
-            for each in updated:
-                callback(each)
-
-            if freq:
-                time.sleep(freq)
+        # 2. Run callback on each one
+        for each in updated:
+            callback(each)
 
 
 
@@ -204,7 +223,7 @@ class Polargraph():
             if freq:
                 time.sleep(freq)
 
-    def update_status(self, freq):
+    def update_status(self, viz=None):
         """
         Transitions the machine status when NOT driven by external
         events.
@@ -214,69 +233,67 @@ class Polargraph():
         behaves when, for instance, the queue empties and there's no lines
         left to dispatch.
 
+        It's designed to be called repeatedly.
+
         """
-        print '%s Status: %s' % (self.name, self.status)
-        while True:
-            try:
-                if self.status == 'idle':
-                    if self.auto_acquire and self.can_acquire:
-                        if self.layout.panels_left() > 0:
-                            # acquire and use a new panel if successful
-                            self.status = 'acquiring'
-                        else:
-                            # no panels left,
-                            self.status = 'waiting_for_new_layout'
+        try:
+            if self.status == 'idle':
+                if self.auto_acquire and self.can_acquire:
+                    if self.layout.panels_left() > 0:
+                        # acquire and use a new panel if successful
+                        self.status = 'acquiring'
+                    else:
+                        # no panels left,
+                        self.status = 'waiting_for_new_layout'
 
-                elif self.status == 'acquiring':
-                    try:
-                        print "self.status == 'acquiring'"
-                        self.acquire(self, self.event_callback)
-                    except:
-                        print "Exception occurred when attempting to " \
-                              "acquire some artwork."
+            elif self.status == 'acquiring':
+                try:
+                    print "self.status == 'acquiring'"
+                    self.acquire(self, self.event_callback, viz=viz)
+                except:
+                    print "Exception occurred when attempting to " \
+                          "acquire some artwork."
 
-                elif self.status == 'acquired':
-                    if not self.paths:
+            elif self.status == 'acquired':
+                if not self.paths:
+                    self.status = 'idle'
+                    raise ValueError('Paths were not found, '
+                                     'although status is acquired')
+
+                # find a new panel for this artwork
+                self.layout.remove_current_panel()
+                new_panel = self.layout.use_random_panel()
+                if not new_panel:
+                    # No new panels! Need to wait for a whole new layout.
+                    self.status = 'waiting_for_new_layout'
+                    raise ValueError("There's a new panel")
+
+                # new panel is available, hooray
+                try:
+                    self.paths = self.layout.scale_to_panel(self.paths)
+                    commands = self.build_commands(self.paths)
+                    print ('%s Appending %s commands to the queue.'
+                           % (self.name, len(commands)))
+                    self.queue.extend(commands)
+                    if self.queue:
+                        self.status = 'serving'
+                    else:
                         self.status = 'idle'
-                        raise ValueError('Paths were not found, '
-                                         'although status is acquired')
 
-                    # find a new panel for this artwork
-                    self.layout.remove_current_panel()
-                    new_panel = self.layout.use_random_panel()
-                    if not new_panel:
-                        # No new panels! Need to wait for a whole new layout.
-                        self.status = 'waiting_for_new_layout'
-                        raise ValueError("There's a new panel")
+                except ValueError:
+                    self.paths = None
+                    self.queue.clear()
+                    self.layout.clear_panels()
+                    self.status = 'waiting_for_new_layout'
+                    raise
 
-                    # new panel is available, hooray
-                    try:
-                        self.paths = self.layout.scale_to_panel(self.paths)
-                        commands = self.build_commands(self.paths)
-                        print ('%s Appending %s commands to the queue.'
-                               % (self.name, len(commands)))
-                        self.queue.extend(commands)
-                        if self.queue:
-                            self.status = 'serving'
-                        else:
-                            self.status = 'idle'
+            elif self.status == 'waiting_for_new_layout':
+                self.queue_running = False
 
-                    except ValueError:
-                        self.paths = None
-                        self.queue.clear()
-                        self.layout.clear_panels()
-                        self.status = 'waiting_for_new_layout'
-                        raise
+        except ValueError:
+            pass
 
-                elif self.status == 'waiting_for_new_layout':
-                    self.queue_running = False
-
-            except ValueError:
-                pass
-
-            #self.queue.appendleft(''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(4)]))
-            if freq:
-                time.sleep(freq)
+        #self.queue.appendleft(''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(4)]))
 
 
     def get_machine_as_svg(self):
@@ -358,12 +375,12 @@ class Polargraph():
             self.status = 'idle'
             self.auto_acquire = False
         elif command == 'now':
-            self.status = 'acquiring'
-            # result = self.state()
-            # ac = self.acquire(self, self.event_callback)
-            # if ac:
-            #     result.update(ac)
-            # return result
+            # self.status = 'acquiring'
+            result = self.state()
+            ac = self.acquire(self, self.event_callback)
+            if ac:
+                result.update(ac)
+            return result
 
         return self.state()
 

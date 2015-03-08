@@ -47,6 +47,7 @@ class ImageGrabber(object):
         self.tracking.score_max = required_score
 
         self.viz = viz
+        cv2.destroyAllWindows()
 
         try:
             if input_image_filename:
