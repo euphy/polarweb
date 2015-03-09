@@ -1,6 +1,8 @@
 from datetime import datetime
+import io
 import json
 from threading import Thread
+import PIL
 import cv2
 from flask import Flask, jsonify, render_template, flash, Response, \
     send_file, make_response, request
@@ -9,6 +11,7 @@ from flask_socketio import SocketIO, emit
 import time
 import jinja2
 from polarweb import visualization
+from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.models import acquire
 from polarweb.models.machines import Machines
 from polarweb.visualization import VisualizationThread
@@ -32,10 +35,11 @@ app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83
 
 socketio = SocketIO(app)
 
+
 def init_machines():
     app.viz = VisualizationThread()
     app.viz.start()
-    visualize()
+    # visualize()
     app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
                             viz_thread=app.viz)
 
@@ -66,7 +70,7 @@ def outgoing_event_signaller(event=None, target=None, value=None):
 
     try:
         html = format_for_web(event['target'], event['value'])
-        socketio.emit('my response',
+        socketio.emit('status_update',
                       {'target': event['target'],
                        'html': html},
                       namespace='/api')
@@ -87,7 +91,12 @@ def outgoing_event_signaller(event=None, target=None, value=None):
 
 @socketio.on('connect', namespace='/api')
 def connect():
+    print "in connect()"
     emit('my response', {'data': 'Connected', 'count': 0})
+
+@socketio.on('guess', namespace='/api')
+def guess_who(message):
+    print "In guess... %s" % message
 
 @app.route('/')
 def start():
@@ -105,6 +114,35 @@ def visualize(state='show'):
         app.viz.window(False)
     else:
         app.viz.window(True)
+
+
+@app.route('/video')
+def video_feed():
+    print "video-ing"
+    return render_template('video.html')
+
+
+# @app.route('/feed')
+@socketio.on('feed', namespace='/api')
+def feed(message):
+    def frame():
+        """Video streaming generator function."""
+        frame_no = 0
+        while frame_no < 210:
+            print frame_no
+            f = app.viz.get_frame()
+            img = PIL.Image.fromarray(f, 'RGB')
+            out_bytes = io.BytesIO()
+            img.save(out_bytes, 'jpeg')
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n'
+                   + out_bytes.getvalue()
+                   + b'\r\n')
+            frame_no += 1
+    print "Feeding"
+    return Response(frame(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 # ==================================================================
@@ -240,6 +278,6 @@ def incoming(machine_name, response_format='json'):
         return jsonify(result)
 
 
+init_machines()
 if __name__ == '__main__':
-    init_machines()
     socketio.run(app, host='0.0.0.0', port=80)

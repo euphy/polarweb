@@ -40,6 +40,7 @@
                     <a href="api/m/{{machine_name}}/layout/svg">
                     <img src="api/m/{{machine_name}}/layout/svg" width="30%"></a>
 
+                    <h3>uptime: <span id="uptime-{{machine_name}}"></span></h3>
                     <h3>Capture status: <span id="capture_status-{{machine_name}}"></span></h3>
                     <h3>Status: <span id="status-{{machine_name}}"></span></h3>
                     <h3>name: <span id="name-{{machine_name}}"></span></h3>
@@ -159,12 +160,14 @@
         // this is specially important when using the global namespace
         var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
         socket.on('connect', function() {
-            socket.emit('my event', {data: 'I\'m connected!'});
+            socket.emit('guess', {data: 'I\'m connected in javascript!'});
         });
+
+        socket.emit('feed', {data: true})
 
         // event handler for server sent data
         // the data is displayed in the "Received" section of the page
-        socket.on('my response', function(msg) {
+        socket.on('status_update', function(msg) {
             console.log('Looking for: #'+msg.target);
             console.log('Found: ' + $('#'+msg.target));
             console.log('Want to change to: ' + msg.html);

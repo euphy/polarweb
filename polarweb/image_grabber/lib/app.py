@@ -47,7 +47,6 @@ class ImageGrabber(object):
         self.tracking.score_max = required_score
 
         self.viz = viz
-        cv2.destroyAllWindows()
 
         try:
             if input_image_filename:
@@ -158,6 +157,22 @@ class ImageGrabber(object):
         print "Saving to %s" % full_file_path
         im.save(full_file_path)
         return full_file_path
+
+    def get_frame(self, timeout=2.0):
+        if self.preloaded_image is not None:
+            return self.preloaded_image
+        else:
+            captured = False
+            start_time = time.clock()
+            while not captured:
+                captured, frame = self.camera.read()
+                if captured:
+                    # rotate the image because the cam is on it's side
+                    frame = cv2.transpose(frame)
+                    frame = cv2.flip(frame, 0)
+                    return frame
+                elif time.clock() > start_time + timeout:
+                    raise IOError("Webcam did not respond in time (%s)" % timeout)
 
     def close(self):
         self.camera.release()

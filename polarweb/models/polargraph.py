@@ -91,26 +91,22 @@ class Polargraph():
         self.position = None
 
         self.paths = None
-        # self.viz = viz
+        self.viz = viz
 
         # Init the serial io
         self.start_serial_comms()
 
         # and the event update_status
-        # drawing_thread = thread.start_new_thread(self.update_status, (0.5,))
-        # drawing_process = thread.start_new_thread(update_machine_status,
-        #                                           (0.5, self))
         drawing_process = threading.Thread(target=update_machine_status,
-                                           args=(0.5, self, viz))
+                                           args=(0.5, self, viz),
+                                           name="update_machine")
         drawing_process.start()
         if event_callback is not None:
             self.event_callback = event_callback
             event_monitor_process = threading.Thread(target=event_monitor,
-                                                            args=(2, self))
+                                                     args=(2, self),
+                                                     name='event_monitor')
             event_monitor_process.start()
-            # self.event_thread = \
-            #     thread.start_new_thread(self.event_monitor,
-            #                             (2, self.event_callback))
         else:
             self.event_callback = None
 
@@ -144,7 +140,7 @@ class Polargraph():
                'comm port')
 
     def send_events(self, callback):
-        print "starting event monitor thread"
+        # print "starting event monitor thread"
         updated = list()
         # 1. Look for changed elements
         for name in self.monitor:
@@ -157,6 +153,9 @@ class Polargraph():
                                     'value': current})
             except AttributeError:
                 continue
+
+        updated.append({'target': 'uptime-%s' % self.name,
+                        'value': '%s:%s:%s' % self.uptime()})
 
         # 2. Run callback on each one
         for each in updated:
@@ -377,7 +376,7 @@ class Polargraph():
         elif command == 'now':
             # self.status = 'acquiring'
             result = self.state()
-            ac = self.acquire(self, self.event_callback)
+            ac = self.acquire(self, self.event_callback, self.viz)
             if ac:
                 result.update(ac)
             return result
