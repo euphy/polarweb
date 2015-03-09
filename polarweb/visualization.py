@@ -1,32 +1,49 @@
+import base64
 import copy
+import io
 from threading import Thread
+from PIL import Image
 import cv2
+import gevent
 import numpy as np
 import time
 from polarweb.image_grabber.lib.app import ImageGrabber
+from gevent import Greenlet
 
-
-class VisualizationThread(Thread):
+class VisualizationThread(Greenlet):
     h = 640
     w = 360
 
     frame = np.zeros((640, 360, 3))
     change = np.full((640, 360, 3), 1)
+    last_served = np.full((640, 360, 3), 255)
     camera = None
 
     def __init__(self, name='visual'):
-        Thread.__init__(self, name="visualization")
+        Greenlet.__init__(self)
+        # Thread.__init__(self, name="visualization")
         self.window_name = name
-        self.grabber = ImageGrabber(debug=False)
+        # self.grabber = ImageGrabber(debug=False)
         print "On it."
 
     def imshow(self, frame):
-        # cv2.imshow(self.window_name, frame)
         self.frame = frame
+        gevent.sleep(0)
 
     def get_frame(self):
-        self.frame = self.grabber.get_frame()
+        # self.frame = self.grabber.get_frame()
         return self.frame
+
+    def get_jpeg_bytes(self, continuous=False):
+        f = self.get_frame()
+        if np.array_equal(self.last_served, f) or continuous:
+            img = Image.fromarray(f, 'RGB')
+            out_bytes = io.BytesIO()
+            img.save(out_bytes, 'jpeg')
+            self.last_served = f
+            return out_bytes
+        else:
+            return None
 
     def run(self):
         while True:

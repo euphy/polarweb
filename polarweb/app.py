@@ -1,20 +1,11 @@
 import base64
-from datetime import datetime
-import io
 import json
-from threading import Thread
-import PIL
-import cv2
 from flask import Flask, jsonify, render_template, flash, Response, \
     send_file, make_response, request
 from flask_assets import Environment, Bundle
 from flask_socketio import SocketIO, emit
-import time
 import gevent
 import jinja2
-from polarweb import visualization
-from polarweb.image_grabber.lib.app import ImageGrabber
-from polarweb.models import acquire
 from polarweb.models.machines import Machines
 from polarweb.visualization import VisualizationThread
 
@@ -39,8 +30,9 @@ socketio = SocketIO(app)
 
 
 def init_machines():
+    # app.viz = VisualizationThread()
+    # app.viz.start()
     app.viz = VisualizationThread()
-    app.viz.start()
     # visualize()
     app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
                             viz_thread=app.viz)
@@ -101,9 +93,11 @@ def connect():
     print "in connect stream()"
     emit('my response', {'data': 'Connected', 'count': 0})
 
+
 @socketio.on('guess', namespace='/api')
 def guess_who(message):
     print "In guess... %s" % message
+
 
 @app.route('/')
 def start():
@@ -115,53 +109,30 @@ def start():
 def offline():
     return render_template("offline.html", machines=app.machines)
 
-@app.route('/visualize/<state>')
+
+@app.route('/visualize')
 def visualize(state='show'):
     if state is "hide":
-        app.viz.window(False)
+        app.streaming = False
     else:
-        app.viz.window(True)
+        app.streaming = True
 
 
 @app.route('/video')
 def video_feed():
-    print "video-ing"
+    app.streaming = True
     return render_template('video.html')
 
 
-# @app.route('/feed')
 @socketio.on('feed', namespace='/stream')
 def feed(message):
-    def frame():
-        """Video streaming generator function."""
-        print "aye aye"
-        frame_no = 0
-        while frame_no < 110:
-            print frame_no
-            f = app.viz.get_frame()
-            img = PIL.Image.fromarray(f, 'RGB')
-            out_bytes = io.BytesIO()
-            img.save(out_bytes, 'jpeg')
-
-            # yield (b'--frame\r\n'
-            #        b'Content-Type: image/jpeg\r\n\r\n'
-            #        + out_bytes.getvalue()
-            #        + b'\r\n')
-            frame_no += 1
-            yield base64.b64encode(out_bytes.getvalue())
-    print "Feeding"
-    # emit('feed_response', {'data': 'stuff'}, namespace='/api')
-    fr = frame()
-    f = fr.next()
-    while f:
-        # print f
-        emit('feed_response',
-             {'mimetype': 'multipart/x-mixed-replace; boundary=frame',
-              'stream': f},
-             namespace='/stream')
-        gevent.sleep(0)
-        # time.sleep(0.5)
-        f = fr.next()
+    print "Message: %s" % message
+    while app.streaming:
+        v = app.viz.get_jpeg_bytes()
+        if v is not None:
+            emit('feed_response', {'frame': base64.b64encode(v.getvalue())},
+                 namespace='/stream')
+        gevent.sleep(0.03)
 
 
 # ==================================================================

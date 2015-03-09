@@ -16,7 +16,7 @@
 		<div class="col-md-12 column">
 			<div class="page-header" style="font-family: Courier; font-weight: 900;">
 				<h1 >
-					Polargraph.
+					Polargraph. <a href='/video'>(video)</a>
 				</h1>
 			</div>
             <div>
@@ -33,9 +33,10 @@
             </div>
 			<div class="row clearfix">
             {% for machine_name in machines['machine_names'] %}
-                <img id="stream-left" src="">
 				<div class="col-md-6 column" id="machine_panel_{{machine_name}}" >
-					<h2 title="{{machines[machine_name].state()}}">Machine: {{ machine_name }}: {{machines[machine_name].status}}</h2>
+					<h2 title="{{machines[machine_name].state()}}">
+                        Machine: {{ machine_name }}: {{machines[machine_name].status}}
+                    </h2>
                     <a href="api/m/{{machine_name}}/svg">
                     <img src="api/m/{{machine_name}}/svg" width="30%"></a>
                     <a href="api/m/{{machine_name}}/layout/svg">
@@ -173,19 +174,6 @@
             console.log('Want to change to: ' + msg.html);
             $('#'+msg.target).html(msg.html);
         });
-
-        var stream_socket = io.connect('http://' + document.domain + ':' + location.port + '/stream');
-        stream_socket.on('connect', function() {
-            stream_socket.emit('guess', {data: 'stream socket is connected in javascript!'});
-        });
-
-        stream_socket.emit('feed', {data: true});
-        stream_socket.on('feed_response', function(msg) {
-            console.log('Feed response got: '+msg);
-            console.log(msg);
-            $("#stream-left").attr('src', 'data:image/jpg;base64,'+msg.stream);
-        });
-
     });
 </script>
                     <p>Connected: <span id="connected-{{machine_name}}">{{machines[machine_name].connected}}</span></p>

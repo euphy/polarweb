@@ -92,6 +92,7 @@ class Polargraph():
 
         self.paths = None
         self.viz = viz
+        self.streaming = False
 
         # Init the serial io
         self.start_serial_comms()

@@ -6,6 +6,7 @@ from random import randint
 
 import cv2
 from PIL import Image
+import gevent
 import numpy as np
 from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.face import Tracking, Framing
@@ -234,7 +235,6 @@ class ImageGrabber(object):
                     print "Diff: %s" % diff
                 diff = diff / 20.0
             self._capture_frame()
-            # time.sleep(1)
 
             # Is a lock obtained?
             if self._face_lock_obtained():
@@ -245,6 +245,7 @@ class ImageGrabber(object):
                 highlighted = np.copy(self.frame)
                 self.tracking.highlight_faces(highlighted, 1)
                 self.viz.imshow(highlighted)
+                gevent.sleep(0)
 
                 # cv2.imshow('visual', highlighted)
                 if self.debug:
