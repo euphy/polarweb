@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 import io
 import json
@@ -9,6 +10,7 @@ from flask import Flask, jsonify, render_template, flash, Response, \
 from flask_assets import Environment, Bundle
 from flask_socketio import SocketIO, emit
 import time
+import gevent
 import jinja2
 from polarweb import visualization
 from polarweb.image_grabber.lib.app import ImageGrabber
@@ -94,6 +96,11 @@ def connect():
     print "in connect()"
     emit('my response', {'data': 'Connected', 'count': 0})
 
+@socketio.on('connect', namespace='/stream')
+def connect():
+    print "in connect stream()"
+    emit('my response', {'data': 'Connected', 'count': 0})
+
 @socketio.on('guess', namespace='/api')
 def guess_who(message):
     print "In guess... %s" % message
@@ -123,26 +130,38 @@ def video_feed():
 
 
 # @app.route('/feed')
-@socketio.on('feed', namespace='/api')
+@socketio.on('feed', namespace='/stream')
 def feed(message):
     def frame():
         """Video streaming generator function."""
+        print "aye aye"
         frame_no = 0
-        while frame_no < 210:
+        while frame_no < 110:
             print frame_no
             f = app.viz.get_frame()
             img = PIL.Image.fromarray(f, 'RGB')
             out_bytes = io.BytesIO()
             img.save(out_bytes, 'jpeg')
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n'
-                   + out_bytes.getvalue()
-                   + b'\r\n')
+            # yield (b'--frame\r\n'
+            #        b'Content-Type: image/jpeg\r\n\r\n'
+            #        + out_bytes.getvalue()
+            #        + b'\r\n')
             frame_no += 1
+            yield base64.b64encode(out_bytes.getvalue())
     print "Feeding"
-    return Response(frame(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    # emit('feed_response', {'data': 'stuff'}, namespace='/api')
+    fr = frame()
+    f = fr.next()
+    while f:
+        # print f
+        emit('feed_response',
+             {'mimetype': 'multipart/x-mixed-replace; boundary=frame',
+              'stream': f},
+             namespace='/stream')
+        gevent.sleep(0)
+        # time.sleep(0.5)
+        f = fr.next()
 
 
 # ==================================================================
