@@ -15,6 +15,7 @@ assets = Environment(app)
 
 js = Bundle('../bower_components/jquery/dist/jquery.js',
             '../bower_components/bootstrap/dist/js/bootstrap.js',
+            '../bower_components/socket.io-client/dist/socket.io.min.js',
             output='packed.js')
 assets.register('js_all', js)
 
