@@ -25,7 +25,7 @@ assets.register('polarweb_css', css)
 
 # app.debug = True
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
-
+app.streaming = False
 socketio = SocketIO(app)
 
 
@@ -33,6 +33,7 @@ def init_machines():
     # app.viz = VisualizationThread()
     # app.viz.start()
     app.viz = VisualizationThread()
+    # app.viz.start()
     # visualize()
     app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
                             viz_thread=app.viz)
@@ -126,7 +127,6 @@ def video_feed():
 
 @socketio.on('feed', namespace='/stream')
 def feed(message):
-    print "Message: %s" % message
     while app.streaming:
         v = app.viz.get_jpeg_bytes()
         if v is not None:

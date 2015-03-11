@@ -27,22 +27,26 @@ class VisualizationThread(Greenlet):
         print "On it."
 
     def imshow(self, frame):
+        # print "accepting frame (%s)" % frame[0:1][0][0][0]
         self.frame = frame
-        gevent.sleep(0)
+        gevent.sleep(0.001)
 
     def get_frame(self):
         # self.frame = self.grabber.get_frame()
+        # print "Emitting frame %s (%s)" % (self, self.frame[0:1][0][0][0])
+        # gevent.sleep(0)
         return self.frame
 
     def get_jpeg_bytes(self, continuous=False):
         f = self.get_frame()
-        if np.array_equal(self.last_served, f) or continuous:
+        if not np.array_equal(self.last_served, f) or continuous:
             img = Image.fromarray(f, 'RGB')
             out_bytes = io.BytesIO()
             img.save(out_bytes, 'jpeg')
             self.last_served = f
             return out_bytes
         else:
+            # print "No new frame!"
             return None
 
     def run(self):

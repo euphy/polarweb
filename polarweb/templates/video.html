@@ -10,15 +10,15 @@
 <script type="text/javascript" charset="utf-8">
     $(document).ready(function(){
         namespace = '/stream';
-        var stream_socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+        url = 'http://' + document.domain + ':' + location.port + namespace;
+        var stream_socket = io.connect(url);
+        stream_socket.timeout = 10;
         stream_socket.on('connect', function() {
             stream_socket.emit('guess', {data: 'stream socket is connected in javascript!'});
         });
 
         stream_socket.emit('feed', {data: true});
         stream_socket.on('feed_response', function(msg) {
-            console.log('Feed response got: '+msg);
-            console.log(msg);
             $("#stream").attr('src', 'data:image/jpg;base64,'+msg.frame);
         });
 
