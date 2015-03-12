@@ -40,7 +40,11 @@ class ImageGrabber(object):
             os.path.join(path,
                          '../resource/haarcascade_frontalface_default.xml'))
 
-        self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
+        if viz is not None:
+            self.camera = viz.camera
+        else:
+            self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
+
         # self.set_resolution(1920, 1080) # real size
         divider = 3
         self.set_resolution(1920/divider, 1080/divider)

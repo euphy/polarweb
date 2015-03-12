@@ -31,11 +31,7 @@ socketio = SocketIO(app)
 
 
 def init_machines():
-    # app.viz = VisualizationThread()
-    # app.viz.start()
-    app.viz = VisualizationThread()
-    # app.viz.start()
-    # visualize()
+    app.viz = VisualizationThread()  # Greenlet
     app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
                             viz_thread=app.viz)
 
@@ -123,6 +119,7 @@ def visualize(state='show'):
 @app.route('/video')
 def video_feed():
     app.streaming = True
+    app.viz.camera_stream(run=True)
     return render_template('video.html')
 
 

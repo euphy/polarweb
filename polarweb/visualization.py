@@ -7,6 +7,7 @@ import cv2
 import gevent
 import numpy as np
 import time
+from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.app import ImageGrabber
 from gevent import Greenlet
 
@@ -17,24 +18,34 @@ class VisualizationThread(Greenlet):
     frame = np.zeros((640, 360, 3))
     change = np.full((640, 360, 3), 1)
     last_served = np.full((640, 360, 3), 255)
+    last_retrieved = np.full((640, 360, 3), 255)
     camera = None
+    camera_streaming = False
+
 
     def __init__(self, name='visual'):
         Greenlet.__init__(self)
-        # Thread.__init__(self, name="visualization")
         self.window_name = name
-        # self.grabber = ImageGrabber(debug=False)
-        print "On it."
+        self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
+        time.sleep(2)  # time to let the camera settle
+
+    def camera_stream(self, run):
+        self.camera_streaming = run
+
+    def capture_frame(self):
+        captured, frame = self.camera.read()
+        if captured:
+            return transform_capture(frame)
+        else:
+            return False
 
     def imshow(self, frame):
-        # print "accepting frame (%s)" % frame[0:1][0][0][0]
         self.frame = frame
         gevent.sleep(0.001)
 
     def get_frame(self):
-        # self.frame = self.grabber.get_frame()
-        # print "Emitting frame %s (%s)" % (self, self.frame[0:1][0][0][0])
-        # gevent.sleep(0)
+        if self.camera_streaming:
+            self.imshow(self.capture_frame())
         return self.frame
 
     def get_jpeg_bytes(self, continuous=False):
@@ -49,15 +60,23 @@ class VisualizationThread(Greenlet):
             # print "No new frame!"
             return None
 
-    def run(self):
-        while True:
-            pass
+    # def run(self):
+    #     while True:
+    #         pass
 
     def window(self, show):
         if show:
             cv2.namedWindow('visual')
         else:
             cv2.destroyWindow('visual')
+
+def transform_capture(frame):
+    if SETTINGS.CAMERA_ORIENTATION == 'none':
+        return frame
+    if SETTINGS.CAMERA_ORIENTATION == 'rotate cw':
+        frame = cv2.transpose(frame)
+        frame = cv2.flip(frame, 0)
+    return frame
 
 def shutter(frame):
     """ Return a black image.

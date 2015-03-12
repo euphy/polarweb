@@ -2,15 +2,27 @@
 <html>
   <head>
     <title>{{machine_name}} video</title>
-{% assets "js_all" %}
-    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-{% endassets %}
+    {% assets "js_all" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+    <style>
+      * {
+        padding: 0;
+        margin-top: 10;
+      }
+      .center {
+        display: block;
+        margin: auto;
+      }
+    </style>
   </head>
-  <body>
-    <img id="stream" src="">
-<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+  <body style="background-color: black;">
+    <img id="stream" src="" class="center">
 <script type="text/javascript" charset="utf-8">
     $(document).ready(function(){
+        // Fit image
+        $('#stream').attr('height', $(window).height()-15);
+
         namespace = '/stream';
         url = 'http://' + document.domain + ':' + location.port + namespace;
         var stream_socket = io.connect(url);
