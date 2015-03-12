@@ -28,4 +28,6 @@ ARTWORK_ACQUIRE_METHOD = {
 }
 
 CAMERA_NUM = 0
+
+# Values are 'none' or 'rotate cw'
 CAMERA_ORIENTATION = 'rotate cw'
