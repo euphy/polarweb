@@ -12,6 +12,8 @@ from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.face import Tracking, Framing
 import image as face_image
 
+import gevent
+
 
 class ImageGrabber(object):
     width = None
@@ -122,7 +124,6 @@ class ImageGrabber(object):
         # Blur and dynamically threshold it
         img, fnames = self.process_image(crop)
         filenames.update(fnames)
-        # self.close()
         filenames['final'] = self.save_image_as_file(img, filename)
         return img, filenames
 
@@ -249,7 +250,6 @@ class ImageGrabber(object):
                 highlighted = np.copy(self.frame)
                 self.tracking.highlight_faces(highlighted, 1)
                 self.viz.imshow(highlighted)
-                gevent.sleep(0)
 
                 # cv2.imshow('visual', highlighted)
                 if self.debug:

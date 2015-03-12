@@ -10,6 +10,7 @@ import time
 from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.app import ImageGrabber
 from gevent import Greenlet
+import gevent
 
 class VisualizationThread(Greenlet):
     h = 640
@@ -40,6 +41,7 @@ class VisualizationThread(Greenlet):
             return False
 
     def imshow(self, frame):
+        print "."
         self.frame = frame
         gevent.sleep(0.001)
 
@@ -78,7 +80,7 @@ def transform_capture(frame):
         frame = cv2.flip(frame, 0)
     return frame
 
-def shutter(frame):
+def shutter(frame=None):
     """ Return a black image.
     :return:
     """
@@ -108,7 +110,7 @@ def resize(step_input, initial_frame):
     return
 
 
-def visualise_capture_process(img_filenames, tracing_thread):
+def visualise_capture_process(img_filenames, tracing_thread, viz=None):
     for key in img_filenames:
         print "%s: %s" % (key, img_filenames[key])
 
@@ -151,17 +153,17 @@ def visualise_capture_process(img_filenames, tracing_thread):
         else:
             step_frame = step['method'](initial_frame)
 
-        cv2.imshow('visual', step_frame)
-        cv2.waitKey(int(step['duration']*1000))
-        print "waited %s" % int(step['duration']*1000)
+        if viz is not None:
+            viz.imshow(step_frame)
+            gevent.sleep(int(step['duration']))
 
     # Now display vector stuff
     # Blank screen for a second
     vector_process_wait = \
         captioned_image(shutter(initial_frame),
                         caption=["Tracing image..."])
-    cv2.imshow('visual', vector_process_wait)
-    cv2.waitKey(1000)
+    viz.imshow(vector_process_wait)
+    gevent.sleep(1)
 
     # Update blank screen with progress reports as long as the thread runs
     last_now = {'name': None,
@@ -182,10 +184,9 @@ def visualise_capture_process(img_filenames, tracing_thread):
             # print "(Last: %s)" % last_now
             pass
 
-        cv2.imshow('visual', vector_process_wait)
-        cv2.waitKey(100)
+        viz.imshow(vector_process_wait)
+        gevent.sleep(0.1)
 
     tracing_thread.join()
     prog, now = tracing_thread.get_progress()
-    cv2.destroyWindow('visual')
     return now['paths']

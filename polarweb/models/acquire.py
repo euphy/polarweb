@@ -5,6 +5,7 @@ from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.pathfinder import workflow
 import numpy as np
 from polarweb.pathfinder.pathfinder_thread import PathfinderThread
+import gevent
 
 def get_acquire_func(method_name, module):
     """
@@ -22,6 +23,7 @@ def acquire_face_track(p, event_callback=None, viz=None):
     """
     Method that will acquire an image to draw.
     """
+    viz.camera_stream(False)
     print "In acquire face track"
     if p.camera_lock:
         print "Camera is locked. Cancelling. But do try again please!"
@@ -47,8 +49,8 @@ def acquire_face_track(p, event_callback=None, viz=None):
 
     image_paths = \
         visualization.visualise_capture_process(img_filenames,
-                                                tracing_thread)
-    print image_paths
+                                                tracing_thread,
+                                                viz)
 
     p.paths.extend(image_paths)
     if p.paths:
@@ -61,6 +63,7 @@ def acquire_face_track(p, event_callback=None, viz=None):
         event_callback(target='capture_status-%s' % p.name,
                        value='Failed to produce paths.')
     p.camera_lock = False
+
 
 def acquire_dummy(p):
     """ Dummy acquisition function.

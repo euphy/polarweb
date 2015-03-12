@@ -10,9 +10,12 @@ import string
 import threading
 import time
 import thread
+import traceback
+import gevent
 
 import serial
 from euclid import Vector2
+from polarweb import visualization
 
 from polarweb.models import acquire
 from polarweb.pathfinder import paths2svg
@@ -49,7 +52,6 @@ class Polargraph():
     """
 
     camera_lock = False
-
     last_seen = dict()
 
     def __init__(self,
@@ -60,6 +62,7 @@ class Polargraph():
                  layout_name='3x3',
                  event_callback=None,
                  viz=None):
+
         self.name = name
         self.extent = extent
         self.current_page = page
@@ -250,11 +253,18 @@ class Polargraph():
                 try:
                     print "self.status == 'acquiring'"
                     self.acquire(self, self.event_callback, viz=viz)
-                except:
+                except Exception as e:
+                    print traceback.format_exc(e)
                     print "Exception occurred when attempting to " \
-                          "acquire some artwork."
+                          "acquire some artwork %s" % e.message
+                finally:
+                    self.camera_lock = False
 
             elif self.status == 'acquired':
+                self.viz.imshow(
+                    visualization.captioned_image(
+                        visualization.shutter(self.viz.get_frame()),
+                        caption=['','','',"Now",'drawing!']))
                 if not self.paths:
                     self.status = 'idle'
                     raise ValueError('Paths were not found, '
@@ -292,9 +302,6 @@ class Polargraph():
 
         except ValueError:
             pass
-
-        #self.queue.appendleft(''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(4)]))
-
 
     def get_machine_as_svg(self):
         filename = os.path.abspath("%s.svg" % self.name)
@@ -375,12 +382,12 @@ class Polargraph():
             self.status = 'idle'
             self.auto_acquire = False
         elif command == 'now':
-            # self.status = 'acquiring'
-            result = self.state()
-            ac = self.acquire(self, self.event_callback, self.viz)
-            if ac:
-                result.update(ac)
-            return result
+            self.status = 'acquiring'
+            # result = self.state()
+            # ac = self.acquire(self, self.event_callback, self.viz)
+            # if ac:
+            #     result.update(ac)
+            # return result
 
         return self.state()
 
