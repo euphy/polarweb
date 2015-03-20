@@ -265,6 +265,13 @@ def incoming(machine_name, response_format='json'):
     else:
         return jsonify(result)
 
+@app.route('/api/m/<machine_name>/restart', methods=['POST'])
+def control_machine(machine_name):
+    """ Send commands to control the image acquire behaviour: 'run', 'pause'
+    """
+    result = app.machines[machine_name].control_machine('restart')
+    return jsonify(result)
+
 
 init_machines()
 if __name__ == '__main__':

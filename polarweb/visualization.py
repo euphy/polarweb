@@ -41,7 +41,7 @@ class VisualizationThread(Greenlet):
             return False
 
     def imshow(self, frame):
-        print "."
+        # print "."
         self.frame = frame
         gevent.sleep(0.001)
 

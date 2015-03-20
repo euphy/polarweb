@@ -67,6 +67,7 @@ class Layout():
         return panels
 
     def use_random_panel(self):
+        print "In random panel."
         if not self.panels.keys():
             return None
         else:

@@ -17,7 +17,7 @@ MACHINES = {
     "left": {
         "width": 725,
         "height": 980,
-        "comm_port": "COM5",
+        "comm_port": "COM9",
         "baud_rate": 57600,
         "default_page": "A1"}
 }

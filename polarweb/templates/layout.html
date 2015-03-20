@@ -53,7 +53,12 @@
                     <h3>contacted: <span id="contacted-{{machine_name}}"></span></h3>
 
                     <h3>Rescue:</h3>
-                    <button type="submit" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/calibrate', function(data){
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/restart', function(data){
+                        console.log(data);
+                        location.reload(true);});">
+                        Restart machine
+                    </button>
+                    <button type="button" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/calibrate', function(data){
                         console.log(data);
                         location.reload(true);});">
                         Recalibrate

@@ -76,26 +76,37 @@ class Polargraph():
         self.ready = False
         self.page_started = False
 
-        self.status = 'waiting_for_new_layout'
-        self.set_layout(page['extent'], layout_name)
-
         self.serial = None
         self.queue = deque(['C17,400,400,10,END'])
         self.received_log = deque()
         self.reading = False
 
+        self.wait_for_new_layout()
+        self.set_layout(page['extent'], layout_name)
+
         self.last_move = None
         self.started_time = datetime.now()
 
         # internal states
-        self.auto_acquire = False
+        self.auto_acquire = True
         self.drawing = False
-        self.queue_running = False
+        self.queue_running = True
         self.position = None
 
         self.paths = None
         self.viz = viz
         self.streaming = False
+
+        # set up acquire strategy
+        self.can_acquire = False
+        if acquire_method:
+            try:
+                self.acquire = \
+                    acquire.get_acquire_func(acquire_method['method_name'],
+                                             acquire_method['module'])
+                self.can_acquire = True
+            except:
+                self.can_acquire = False
 
         # Init the serial io
         self.start_serial_comms()
@@ -116,17 +127,6 @@ class Polargraph():
 
         self.commands = {'pen_up': 'C14,20,END',
                          'pen_down': 'C13,130,END'}
-
-        # set up acquire strategy
-        self.can_acquire = False
-        if acquire_method:
-            try:
-                self.acquire = \
-                    acquire.get_acquire_func(acquire_method['method_name'],
-                                             acquire_method['module'])
-                self.can_acquire = True
-            except:
-                self.can_acquire = False
 
         print "Initialised: %s." % self
 
@@ -198,7 +198,6 @@ class Polargraph():
             return False
 
     def _read_line(self, freq, received_log):
-
         while True:
             if self.reading:
                 l = self.serial.readline().strip('\r\n')
@@ -215,12 +214,9 @@ class Polargraph():
             if self.ready and self.queue_running:
                 self.reading = False
                 if outgoing_queue:
-                    self.status = 'serving'
                     c = outgoing_queue.popleft()
-                    self.serial.write(c+";")
+                    self.serial.write(c+"\n")
                     print "Writing out: %s" % c
-                    if not outgoing_queue:  # that was the last one
-                        self.status = 'idle'
                     self.ready = False
                 self.reading = True
             if freq:
@@ -247,7 +243,8 @@ class Polargraph():
                         self.status = 'acquiring'
                     else:
                         # no panels left,
-                        self.status = 'waiting_for_new_layout'
+                        print "No panels left!"
+                        self.wait_for_new_layout()
 
             elif self.status == 'acquiring':
                 try:
@@ -275,7 +272,7 @@ class Polargraph():
                 new_panel = self.layout.use_random_panel()
                 if not new_panel:
                     # No new panels! Need to wait for a whole new layout.
-                    self.status = 'waiting_for_new_layout'
+                    self.wait_for_new_layout()
                     raise ValueError("There's a new panel")
 
                 # new panel is available, hooray
@@ -290,15 +287,16 @@ class Polargraph():
                     else:
                         self.status = 'idle'
 
-                except ValueError:
+                except ValueError as ve:
+                    print ve
                     self.paths = None
                     self.queue.clear()
                     self.layout.clear_panels()
-                    self.status = 'waiting_for_new_layout'
+                    self.wait_for_new_layout()
                     raise
 
             elif self.status == 'waiting_for_new_layout':
-                self.queue_running = False
+                print "in %s" % self.status
 
         except ValueError:
             pass
@@ -379,22 +377,19 @@ class Polargraph():
         if command == 'automatic':
             self.auto_acquire = True
         elif command == 'manual':
+            print "setting to idle 7"
             self.status = 'idle'
             self.auto_acquire = False
         elif command == 'now':
             self.status = 'acquiring'
-            # result = self.state()
-            # ac = self.acquire(self, self.event_callback, self.viz)
-            # if ac:
-            #     result.update(ac)
-            # return result
-
         return self.state()
 
     def control_drawing(self, command):
         if command == 'run':
             if self.status == 'waiting_for_new_layout':
+                print "Changing status from waiting_for_new_layout to idle"
                 self.set_layout(self.layout.extent, self.layout.design)
+                print "setting to idle 6"
                 self.status = 'idle'
             self.queue_running = True
         elif command == 'pause':
@@ -403,16 +398,17 @@ class Polargraph():
             self.queue.clear()
             self.queue.append(self.commands['pen_up'])  # pen lift
             self.layout.remove_current_panel()
+            print "setting to idle 5"
             self.status = 'idle'
         elif command == 'cancel_page':
             self.queue.clear()
-            self.queue_running = False
-            self.layout.clear_panels()
             self.queue.append(self.commands['pen_up'])  # pen lift
-            self.status = 'waiting_for_new_layout'
+            self.layout.clear_panels()
+            self.wait_for_new_layout()
         elif command == 'reuse_panel':
             self.queue.clear()
             self.layout.current_panel_key = None
+            print "setting to idle 4"
             self.status = 'idle'
 
         return self.state()
@@ -432,6 +428,14 @@ class Polargraph():
             self.queue.append("C32,%s,END" % data['accel'])
         if 'calibrate' in data:
             self.queue.append("C48,END")
+
+        return self.state()
+
+    def control_machine(self, data):
+        if 'restart' in data:
+            self.queue.clear()
+            self.queue_running = True
+            self.queue.append('C51,END')
 
         return self.state()
 
@@ -475,6 +479,9 @@ class Polargraph():
             elif 'CARTESIAN' in command:
                 self.calibrated = True
                 self.position = Polargraph.unpack_sync(command)
+            elif 'BUTTON' in command:
+                print "Button pressed"
+                self.control_drawing('run')
         except:
             pass
 
@@ -495,7 +502,9 @@ class Polargraph():
         if self.status == 'waiting_for_new_layout':
             self.layout = Layout(page, layout_name)
             self.layout.use_random_panel()
+            print "setting to idle 3"
             self.status = 'idle'
+            self.queue.append('C50,END')
 
         return {'layout': layout_name,
                 'page': page}
@@ -548,4 +557,9 @@ class Polargraph():
         result.append(self.commands['pen_up'])
 
         return result
+
+    def wait_for_new_layout(self):
+        traceback.print_stack()
+        self.queue.append('C49,END')
+        self.status = 'waiting_for_new_layout'
 
