@@ -218,6 +218,8 @@ class Polargraph():
                     self.serial.write(c+"\n")
                     print "Writing out: %s" % c
                     self.ready = False
+                # else:
+                #     self.status = 'idle'
                 self.reading = True
             if freq:
                 time.sleep(freq)
