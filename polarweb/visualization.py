@@ -12,6 +12,8 @@ from polarweb.image_grabber.lib.app import ImageGrabber
 from gevent import Greenlet
 import gevent
 
+camera = None
+
 class VisualizationThread(Greenlet):
     h = 640
     w = 360
@@ -20,14 +22,17 @@ class VisualizationThread(Greenlet):
     change = np.full((640, 360, 3), 1)
     last_served = np.full((640, 360, 3), 255)
     last_retrieved = np.full((640, 360, 3), 255)
-    camera = None
     camera_streaming = False
-
 
     def __init__(self, name='visual'):
         Greenlet.__init__(self)
         self.window_name = name
-        self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
+        global camera
+        if camera is None:
+            camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
+        self.camera = camera
+
+
         time.sleep(2)  # time to let the camera settle
 
     def camera_stream(self, run):

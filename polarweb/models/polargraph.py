@@ -33,6 +33,7 @@ def event_monitor(freq, p):
         if freq:
             time.sleep(freq)
 
+camera_lock = False
 
 class Polargraph():
     """
@@ -51,7 +52,6 @@ class Polargraph():
 
     """
 
-    camera_lock = False
     last_seen = dict()
 
     def __init__(self,
@@ -62,6 +62,10 @@ class Polargraph():
                  layout_name='3x3',
                  event_callback=None,
                  viz=None):
+
+        global camera_lock
+        print "Camera lock: %s" % id(camera_lock)
+        self.camera_lock = camera_lock
 
         self.name = name
         self.extent = extent
@@ -112,10 +116,9 @@ class Polargraph():
         self.start_serial_comms()
 
         # and the event update_status
-        drawing_process = threading.Thread(target=update_machine_status,
-                                           args=(0.5, self, viz),
-                                           name="update_machine")
-        drawing_process.start()
+        self.machine_status_process = threading.Thread(target=update_machine_status,
+                                           args=(random.uniform(0.5, 1.1), self, viz),
+                                           name="update_machine_%s" % id(self))
         if event_callback is not None:
             self.event_callback = event_callback
             event_monitor_process = threading.Thread(target=event_monitor,
@@ -237,6 +240,8 @@ class Polargraph():
         It's designed to be called repeatedly.
 
         """
+
+        print "CAmera lock: %s" % id(camera_lock)
         try:
             if self.status == 'idle':
                 if self.auto_acquire and self.can_acquire:
@@ -251,7 +256,12 @@ class Polargraph():
             elif self.status == 'acquiring':
                 try:
                     print "self.status == 'acquiring'"
-                    self.acquire(self, self.event_callback, viz=viz)
+                    print "CAMMERA LOCK!! %s" % id(self.camera_lock)
+                    if self.camera_lock:
+                        print "Camera is locked."
+                    else:
+                        self.acquire(self, self.event_callback, viz=viz)
+
                 except Exception as e:
                     print traceback.format_exc(e)
                     print "Exception occurred when attempting to " \
@@ -263,7 +273,7 @@ class Polargraph():
                 self.viz.imshow(
                     visualization.captioned_image(
                         visualization.shutter(self.viz.get_frame()),
-                        caption=['','','',"Now",'drawing!']))
+                        caption=['', '', '', "Now", 'drawing!']))
                 if not self.paths:
                     self.status = 'idle'
                     raise ValueError('Paths were not found, '
@@ -391,7 +401,6 @@ class Polargraph():
             if self.status == 'waiting_for_new_layout':
                 print "Changing status from waiting_for_new_layout to idle"
                 self.set_layout(self.layout.extent, self.layout.design)
-                print "setting to idle 6"
                 self.status = 'idle'
             self.queue_running = True
         elif command == 'pause':
@@ -400,7 +409,6 @@ class Polargraph():
             self.queue.clear()
             self.queue.append(self.commands['pen_up'])  # pen lift
             self.layout.remove_current_panel()
-            print "setting to idle 5"
             self.status = 'idle'
         elif command == 'cancel_page':
             self.queue.clear()
@@ -504,7 +512,6 @@ class Polargraph():
         if self.status == 'waiting_for_new_layout':
             self.layout = Layout(page, layout_name)
             self.layout.use_random_panel()
-            print "setting to idle 3"
             self.status = 'idle'
             self.queue.append('C50,END')
 
@@ -561,7 +568,6 @@ class Polargraph():
         return result
 
     def wait_for_new_layout(self):
-        traceback.print_stack()
         self.queue.append('C49,END')
         self.status = 'waiting_for_new_layout'
 

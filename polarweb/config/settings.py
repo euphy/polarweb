@@ -17,9 +17,16 @@ MACHINES = {
     "left": {
         "width": 725,
         "height": 980,
+        "comm_port": "COM8",
+        "baud_rate": 57600,
+        "default_page": "A1"},
+    "right": {
+        "width": 725,
+        "height": 980,
         "comm_port": "COM9",
         "baud_rate": 57600,
         "default_page": "A1"}
+
 }
 
 ARTWORK_ACQUIRE_METHOD = {

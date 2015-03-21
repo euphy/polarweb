@@ -28,6 +28,7 @@ assets.register('polarweb_css', css)
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
 app.streaming = False
 socketio = SocketIO(app)
+app.debug = True
 
 
 def init_machines():
@@ -56,7 +57,7 @@ def outgoing_event_signaller(event=None, target=None, value=None):
     if value is not None:
         event['value'] = value
 
-    print "Event: %s" % event
+    # print "Event: %s" % event
     if 'target' not in event and 'value' not in event:
         return False
 

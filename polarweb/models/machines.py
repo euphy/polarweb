@@ -25,6 +25,8 @@ class Machines(dict):
                            viz=viz_thread)
             self[p.name] = p
             self.machine_names.append(p.name)
+            p.machine_status_process.start()
+
 
 
     def list_ports(self):

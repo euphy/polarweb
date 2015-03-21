@@ -23,8 +23,9 @@ def acquire_face_track(p, event_callback=None, viz=None):
     """
     Method that will acquire an image to draw.
     """
-    viz.camera_stream(False)
     print "In acquire face track"
+    print "Using lock %s" % id(p.camera_lock)
+    print "lock val 1: %s" % p.camera_lock
     if p.camera_lock:
         print "Camera is locked. Cancelling. But do try again please!"
         p.status = 'idle'
@@ -34,7 +35,11 @@ def acquire_face_track(p, event_callback=None, viz=None):
     else:
         event_callback(target='capture_status-%s' % p.name,
                        value="Acquiring...")
-    p.camera_lock = True
+        print "LOCKING CAMERA %s" % id(p.camera_lock)
+        p.camera_lock = True
+        print "lock val 2: %s" % p.camera_lock
+
+    viz.camera_stream(False)
     p.paths = list()
 
     grabber = ImageGrabber(debug=False, viz=viz)
@@ -62,6 +67,8 @@ def acquire_face_track(p, event_callback=None, viz=None):
         p.status = 'idle'
         event_callback(target='capture_status-%s' % p.name,
                        value='Failed to produce paths.')
+
+    print "RELEASING CAMERA LOCK %s" % id(p.camera_lock)
     p.camera_lock = False
 
 
