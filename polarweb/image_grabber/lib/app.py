@@ -13,6 +13,7 @@ from polarweb.image_grabber.lib.face import Tracking, Framing
 import image as face_image
 
 import gevent
+from polarweb.models.camera import Camera
 
 
 class ImageGrabber(object):
@@ -24,12 +25,17 @@ class ImageGrabber(object):
     last_highest = 0
     viz = None
 
+    def dummy_frame_buffer(self, frame):
+        print "Using dummy frame buffer."
+        pass
+
     def __init__(self,
                  debug=False, required_score=15, blur=6,
                  posterize_levels=3, threshold_zoom=0.9,
                  input_image_filename=None,
                  visualise_capture=True,
-                 viz=None):
+                 camera=None,
+                 frame_buffer_func=None):
 
         self.debug = debug
         self.blur = blur
@@ -42,18 +48,16 @@ class ImageGrabber(object):
             os.path.join(path,
                          '../resource/haarcascade_frontalface_default.xml'))
 
-        if viz is not None:
-            self.camera = viz.camera
-        else:
-            self.camera = cv2.VideoCapture(SETTINGS.CAMERA_NUM)
+        self.camera = camera if camera is not None else Camera()
 
-        # self.set_resolution(1920, 1080) # real size
         divider = 3
         self.set_resolution(1920/divider, 1080/divider)
         self.tracking = Tracking()
         self.tracking.score_max = required_score
-
-        self.viz = viz
+        if frame_buffer_func is not None:
+            self.frame_buffer_write = frame_buffer_func
+        else:
+            self.frame_buffer_write = self.dummy_frame_buffer
 
         try:
             if input_image_filename:
@@ -71,8 +75,8 @@ class ImageGrabber(object):
         self.width = x
         self.height = y
 
-        self.camera.set(3, x)
-        self.camera.set(4, y)
+        self.camera.get_camera().set(3, x)
+        self.camera.get_camera().set(4, y)
 
     def posterize_image(self, img):
         thresholds = face_image.get_threshold_boundaries(
@@ -164,22 +168,6 @@ class ImageGrabber(object):
         im.save(full_file_path)
         return full_file_path
 
-    def get_frame(self, timeout=2.0):
-        if self.preloaded_image is not None:
-            return self.preloaded_image
-        else:
-            captured = False
-            start_time = time.clock()
-            while not captured:
-                captured, frame = self.camera.read()
-                if captured:
-                    # rotate the image because the cam is on it's side
-                    frame = cv2.transpose(frame)
-                    frame = cv2.flip(frame, 0)
-                    return frame
-                elif time.clock() > start_time + timeout:
-                    raise IOError("Webcam did not respond in time (%s)" % timeout)
-
     def close(self):
         self.camera.release()
         cv2.destroyAllWindows()
@@ -209,16 +197,8 @@ class ImageGrabber(object):
                portrait_rect
 
     def _capture_frame(self):
-        if self.preloaded_image is not None:
-            self.frame = self.preloaded_image
-        else:
-            captured = False
-            while not captured:
-                captured, frame = self.camera.read()
-                # rotate the image because the cam is on it's side
-                frame = cv2.transpose(frame)
-                frame = cv2.flip(frame, 0)
-                self.frame = frame
+        # print "_capture_Frame in ImageGrabber"
+        self.frame = self.camera.capture_frame()
 
         self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         # self.gray = cv2.equalizeHist(self.gray)
@@ -249,7 +229,7 @@ class ImageGrabber(object):
 
                 highlighted = np.copy(self.frame)
                 self.tracking.highlight_faces(highlighted, 1)
-                self.viz.imshow(highlighted)
+                self.frame_buffer_write(highlighted)
 
                 # cv2.imshow('visual', highlighted)
                 if self.debug:

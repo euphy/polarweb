@@ -7,7 +7,7 @@ from flask_socketio import SocketIO, emit
 import gevent
 import jinja2
 from polarweb.models.machines import Machines
-from polarweb.visualization import VisualizationThread
+from polarweb.models.visualization import VisualizationThread
 
 
 app = Flask(__name__)
@@ -28,11 +28,13 @@ assets.register('polarweb_css', css)
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
 app.streaming = False
 socketio = SocketIO(app)
-app.debug = True
+# app.debug = True
+app.viz = None
 
 
 def init_machines():
     app.viz = VisualizationThread()  # Greenlet
+    print "app.viz %s" % app.viz
     app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
                             viz_thread=app.viz)
 
@@ -77,7 +79,6 @@ def outgoing_event_signaller(event=None, target=None, value=None):
     return True
 
 
-
 # ==================================================================
 #    Routes for HTML
 # ==================================================================
@@ -87,9 +88,9 @@ def connect():
     print "in connect()"
     emit('my response', {'data': 'Connected', 'count': 0})
 
-@socketio.on('connect', namespace='/stream')
+@socketio.on('connect', namespace='/run_stream')
 def connect():
-    print "in connect stream()"
+    print "in connect run_stream()"
     emit('my response', {'data': 'Connected', 'count': 0})
 
 
@@ -120,17 +121,21 @@ def visualize(state='show'):
 @app.route('/video')
 def video_feed():
     app.streaming = True
-    app.viz.camera_stream(run=True)
     return render_template('video.html')
 
 
-@socketio.on('feed', namespace='/stream')
+@socketio.on('feed', namespace='/run_stream')
 def feed(message):
+    # print "app %s" % app.streaming
     while app.streaming:
-        v = app.viz.get_jpeg_bytes()
+        v = app.viz.read_jpeg_bytes()
         if v is not None:
+            # print "v"
             emit('feed_response', {'frame': base64.b64encode(v.getvalue())},
-                 namespace='/stream')
+                 namespace='/run_stream')
+        else:
+            # print "nothing to viz"
+            pass
         gevent.sleep(0.03)
 
 

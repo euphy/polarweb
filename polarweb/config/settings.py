@@ -13,21 +13,25 @@ PAGES = {
 
 DEFAULT_PAGE = "A1"
 
-MACHINES = {
-    "left": {
+MACHINES = [
+    {"name": "left",
+     "spec": {
         "width": 725,
         "height": 980,
         "comm_port": "COM8",
         "baud_rate": 57600,
-        "default_page": "A1"},
-    "right": {
+        "default_page": "A1"}
+    }
+    ,
+    {"name": "right",
+     "spec": {
         "width": 725,
         "height": 980,
         "comm_port": "COM9",
         "baud_rate": 57600,
         "default_page": "A1"}
-
-}
+    }
+]
 
 ARTWORK_ACQUIRE_METHOD = {
     "method_name": "acquire_face_track",

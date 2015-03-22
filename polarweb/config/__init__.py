@@ -18,10 +18,9 @@ def relate_pages_to_machines():
         v['name'] = k
 
     # unpack the machine details
-    for k in settings.MACHINES:
-        v = settings.MACHINES[k]
-        v['extent'] = Rectangle(Vector2(v['width'], v['height']), Vector2(0, 0))
-        v['name'] = k
+    for v in settings.MACHINES:
+        v['spec']['extent'] = Rectangle(
+            Vector2(v['spec']['width'], v['spec']['height']), Vector2(0, 0))
 
     return settings
 

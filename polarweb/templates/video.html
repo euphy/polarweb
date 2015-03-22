@@ -17,23 +17,23 @@
     </style>
   </head>
   <body style="background-color: black;">
-    <img id="stream" src="" class="center">
+    <img id="run_stream" src="" class="center">
 <script type="text/javascript" charset="utf-8">
     $(document).ready(function(){
         // Fit image
-        $('#stream').attr('height', $(window).height()-15);
+        $('#run_stream').attr('height', $(window).height()-15);
 
-        namespace = '/stream';
+        namespace = '/run_stream';
         url = 'http://' + document.domain + ':' + location.port + namespace;
         var stream_socket = io.connect(url);
         stream_socket.timeout = 10;
         stream_socket.on('connect', function() {
-            stream_socket.emit('guess', {data: 'stream socket is connected in javascript!'});
+            stream_socket.emit('guess', {data: 'run_stream socket is connected in javascript!'});
         });
 
         stream_socket.emit('feed', {data: true});
         stream_socket.on('feed_response', function(msg) {
-            $("#stream").attr('src', 'data:image/jpg;base64,'+msg.frame);
+            $("#run_stream").attr('src', 'data:image/jpg;base64,'+msg.frame);
         });
 
     });
