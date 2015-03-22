@@ -18,7 +18,7 @@ MACHINES = [
      "spec": {
         "width": 725,
         "height": 980,
-        "comm_port": "COM8",
+        "comm_port": "COM40",
         "baud_rate": 57600,
         "default_page": "A1"}
     }
@@ -27,7 +27,7 @@ MACHINES = [
      "spec": {
         "width": 725,
         "height": 980,
-        "comm_port": "COM9",
+        "comm_port": "COM39",
         "baud_rate": 57600,
         "default_page": "A1"}
     }
@@ -38,7 +38,7 @@ ARTWORK_ACQUIRE_METHOD = {
     "module": "polarweb.models.acquire"
 }
 
-CAMERA_NUM = 0
+CAMERA_NUM = 1
 
 # Values are 'none' or 'rotate cw'
 CAMERA_ORIENTATION = 'rotate cw'

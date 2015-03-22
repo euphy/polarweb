@@ -240,8 +240,11 @@ class Polargraph():
         # print "     %s Acquisition lock %s" % (self.name, acquire.acquisition_lock)
         # print "     %s Acquisition lock %s" % (self.name, id(acquire.acquisition_lock))
         try:
+            if self.status == 'serving':
+                pass
+
             if self.status == 'idle':
-                if self.auto_acquire and self.can_acquire:
+                if not self.queue and self.auto_acquire and self.can_acquire:
                     if self.layout.panels_left() > 0:
                         # acquire and use a new panel if successful
                         self.status = 'acquiring'
@@ -287,11 +290,10 @@ class Polargraph():
                     print ('%s Appending %s commands to the queue.'
                            % (self.name, len(commands)))
                     self.queue.extend(commands)
-                    if self.queue:
-                        self.status = 'serving'
-                    else:
-                        self.status = 'idle'
-
+                    # if self.queue:
+                    #     self.status = 'serving'
+                    # else:
+                    self.status = 'idle'
                 except ValueError as ve:
                     print ve
                     self.paths = None
@@ -503,7 +505,8 @@ class Polargraph():
         """
         if self.status == 'waiting_for_new_layout':
             self.layout = Layout(page, layout_name)
-            self.layout.use_random_panel()
+            # print "%s Getting panel in set_layout:" % self.name
+            # self.layout.use_random_panel()
             self.status = 'idle'
             self.queue.append('C50,END')
 
