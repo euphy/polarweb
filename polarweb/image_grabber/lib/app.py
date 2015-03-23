@@ -24,6 +24,7 @@ class ImageGrabber(object):
     faces = None
     last_highest = 0
     viz = None
+    min_face_size = 200
 
     def dummy_frame_buffer(self, frame):
         print "Using dummy frame buffer."
@@ -35,13 +36,15 @@ class ImageGrabber(object):
                  input_image_filename=None,
                  visualise_capture=True,
                  camera=None,
-                 frame_buffer_func=None):
+                 frame_buffer_func=None,
+                 min_face_size=200):
 
         self.debug = debug
         self.blur = blur
         self.posterize_levels = posterize_levels
         self.threshold_zoom = threshold_zoom
         self.visualise_capture = visualise_capture
+        self.min_face_size = min_face_size
 
         path = os.path.split(__file__)[0]
         self.face_cascade = cv2.CascadeClassifier(
@@ -204,7 +207,14 @@ class ImageGrabber(object):
         # self.gray = cv2.equalizeHist(self.gray)
         self.faces = self.face_cascade.detectMultiScale(self.gray, 1.3, 5)
 
-        self.tracking.observe(self.faces)
+        # Filter out small faces
+        self.big_faces = [f for f in self.faces if f[2] >= self.min_face_size]
+
+        if len(self.big_faces) != len(self.faces):
+            # Come closer, my pretty...
+            pass
+
+        self.tracking.observe(self.big_faces)
 
         return self.frame
 
@@ -228,7 +238,10 @@ class ImageGrabber(object):
             if self.visualise_capture:
 
                 highlighted = np.copy(self.frame)
-                self.tracking.highlight_faces(highlighted, 1)
+                self.tracking.highlight_faces(highlighted,
+                                              scale=1,
+                                              all_faces=self.faces,
+                                              big_faces=self.big_faces)
                 self.frame_buffer_write(highlighted)
 
                 # cv2.imshow('visual', highlighted)

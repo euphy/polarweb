@@ -237,8 +237,6 @@ class Polargraph():
         """
 
         print "%s Update status %s" % (self.name, self.status)
-        # print "     %s Acquisition lock %s" % (self.name, acquire.acquisition_lock)
-        # print "     %s Acquisition lock %s" % (self.name, id(acquire.acquisition_lock))
         try:
             if self.status == 'serving':
                 pass

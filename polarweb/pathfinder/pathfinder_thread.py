@@ -5,9 +5,11 @@ import time
 from PIL import Image
 import numpy
 from paths import build_graph, build_paths, filter_paths, paths2svg, paths2json
+from polarweb.drawing_planner import optimize_sequence
 from polarweb.pathfinder.smoothing import apply_box_smoothing
 from decimation import subsampling_decimation, anchor_angle_error, \
     total_divergence_error
+
 
 class PathfinderThread(Thread):
 
@@ -18,6 +20,7 @@ class PathfinderThread(Thread):
                 {'name': 'Smoothing paths', 'status': "Not started"},
                 {'name': 'Decimating paths', 'status': "Not started"},
                 {'name': 'Cleanup paths', 'status': "Not started"},
+                {'name': 'Optimise sequence', 'status': 'Not started'},
                 {'name': 'Saving SVG', 'status': "Not started"},
                 {'name': 'Saving JSON', 'status': "Not started"},
                 {'name': 'Finished', 'status': "Not started"}]
@@ -122,20 +125,33 @@ class PathfinderThread(Thread):
         print "Decimated in %s" % (self.stage_tic - self.stage_start)
         self.progress[self.progress_stage]['status'] = "%ss" % \
                                         (self.stage_tic - self.stage_start)
+
+        # Now remove paths that have been decimated down to two three nodes
         self.stage_start = time.clock()
         self.progress_stage = 6
         self.progress[self.progress_stage]['status'] = 'Started'
-
-        # finally remove paths that have been decimated down to two three nodes
-        paths = filter_paths(paths, min_length=3)
+        paths = filter_paths(paths, min_length=4)
         self.progress[self.progress_stage]['filename'] = svg_filename
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
-        print "Final filter in %s" % (self.stage_tic - self.stage_start)
+        print "Cleanup filter in %s" % (self.stage_tic - self.stage_start)
         self.progress[self.progress_stage]['status'] = "%ss" % \
                                         (self.stage_tic - self.stage_start)
+
+        # # Now sequence the paths so that there is less travel time
+        # self.stage_start = time.clock()
+        # self.progress_stage = 7
+        # self.progress[self.progress_stage]['status'] = 'Started'
+        # paths = optimize_sequence(paths)
+        # time.sleep(slug_factor)
+        # self.stage_tic = time.clock()
+        # print "Sequence optimized in %s" % (self.stage_tic - self.stage_start)
+        # self.progress[self.progress_stage]['status'] = "%ss" % \
+        #                                 (self.stage_tic - self.stage_start)
+
+        # Save SVG
         self.stage_start = time.clock()
-        self.progress_stage = 7
+        self.progress_stage = 8
         self.progress[self.progress_stage]['status'] = 'Started'
         svg_filename = self.save_svg(paths, image.size, "05_final")
         self.progress[self.progress_stage]['filename'] = svg_filename
@@ -145,7 +161,7 @@ class PathfinderThread(Thread):
         self.progress[self.progress_stage]['status'] = "%ss" % \
                                         (self.stage_tic - self.stage_start)
         self.stage_start = time.clock()
-        self.progress_stage = 8
+        self.progress_stage = 9
         self.progress[self.progress_stage]['status'] = 'Started'
 
         json_filename = self.filename + '.json'
@@ -157,7 +173,7 @@ class PathfinderThread(Thread):
                                         (self.stage_tic - self.process_start)
         self.progress[self.progress_stage]['status'] = "%ss" % \
                                         (self.stage_tic - self.stage_start)
-        self.progress_stage = 9
+        self.progress_stage = 10
         self.progress[self.progress_stage]['status'] = 'Started'
         self.progress[self.progress_stage]['paths'] = paths
 

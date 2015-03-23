@@ -124,8 +124,12 @@ class Tracking(object):
     def face_boundary(self, face_id):
         return self.moving_average(self.evidence[face_id]['rects'])
 
-    def highlight_faces(self, frame, scale, debug=False):
+    def highlight_faces(self, frame, scale, all_faces=None, big_faces=None, debug=False):
         first = True
+        white = (255, 255, 255)
+        msg = ["",""]
+
+
         for key, evidence in self.faces_by_size():
             (x, y, r) = [int(i*scale) for i in evidence['radial']]
 
@@ -136,15 +140,14 @@ class Tracking(object):
                        (0, 255, 0), 1)
 
             y_offset = y + int(r) + 25
-            text_col = (255, 255, 255)
             cv2.putText(frame, "id: %s" % key, (x, y_offset),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_col)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, white)
             y_offset += 16
             cv2.putText(frame, "size: %s" % r, (x, y_offset),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_col)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, white)
             y_offset += 16
             cv2.putText(frame, "score: %s" % evidence['score'], (x, y_offset),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_col)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, white)
 
             if debug:
                 cv2.line(frame, (x, y), (int(x+r*0.7), int(y+r*0.7)),
@@ -157,10 +160,23 @@ class Tracking(object):
                            (0, 0, 0), 2)
 
                 score_percent = float(evidence['score']) / float(self.score_max) * 100.0
+                msg = ["Locking... %d%%" % score_percent, ""]
                 cv2.putText(frame, "Locking... %d%%" % score_percent, (5, 25),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
 
                 first = False
+
+        if msg == ["", ""]:
+            if all_faces is not None and \
+               len(all_faces) and not big_faces:
+                msg = ["Please come closer...", ""]
+            elif all_faces is None or not len(all_faces):
+                msg = ["Looking for", "people to draw.."]
+
+        cv2.putText(frame, msg[0], (5, 25),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, white)
+        cv2.putText(frame, msg[1], (5, 25+35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, white)
 
 
 

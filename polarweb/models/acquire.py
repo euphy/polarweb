@@ -1,5 +1,6 @@
 from importlib import import_module
 import cv2
+from polarweb.config import SETTINGS
 from polarweb.models import visualization
 from polarweb.image_grabber.lib.app import ImageGrabber
 from polarweb.pathfinder import workflow
@@ -47,7 +48,8 @@ def acquire_face_track(p, event_callback=None, viz=None):
     p.paths = list()
 
     grabber = ImageGrabber(debug=False,
-                           frame_buffer_func=viz.get_frame_buffer().write)
+                           frame_buffer_func=viz.get_frame_buffer().write,
+                           min_face_size=SETTINGS.MIN_FACE_SIZE)
     img_filenames = grabber.get_images(filename="png")
     event_callback(target='capture_status-%s' % p.name,
                    value='Got images.')
