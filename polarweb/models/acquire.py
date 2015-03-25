@@ -47,9 +47,17 @@ def acquire_face_track(p, event_callback=None, viz=None):
 
     p.paths = list()
 
+    # Initialise the face grabber
+    min_face_size = SETTINGS.MIN_FACE_SIZE \
+        if hasattr(SETTINGS, 'MIN_FACE_SIZE') else 150
+
+    required_score = SETTINGS.FACE_LOCK_VALUE \
+        if hasattr(SETTINGS, 'FACE_LOCK_VALUE') else 15
+
     grabber = ImageGrabber(debug=False,
+                           required_score=required_score,
                            frame_buffer_func=viz.get_frame_buffer().write,
-                           min_face_size=SETTINGS.MIN_FACE_SIZE)
+                           min_face_size=min_face_size)
     img_filenames = grabber.get_images(filename="png")
     event_callback(target='capture_status-%s' % p.name,
                    value='Got images.')

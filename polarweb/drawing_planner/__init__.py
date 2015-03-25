@@ -1,6 +1,7 @@
 from collections import defaultdict
 import copy
 import sys
+from polarweb.pathfinder import paths2svg
 
 
 class Glyph():
@@ -122,6 +123,14 @@ def reorder_greedy(glyphs):
 
     return queue
 
+def save_svg(paths, suffix):
+    svg_filename = "_".join(("test", suffix)) + ".svg"
+    paths2svg(paths, (500,500), svg_filename,
+              scale=1,
+              show_nodes=True,
+              outline=True)
+    return svg_filename
+
 
 def optimize_sequence(paths):
     # glyphs is a list of paths
@@ -129,7 +138,8 @@ def optimize_sequence(paths):
     glyphs = build_glyphs(paths)
     print("Initial penup distance: %9d" % total_penup_travel(glyphs))
     print("Initial total distance: %9d" % total_travel(glyphs))
-    
+    # save_svg([ps.paths for ps in glyphs], "basic")
+
     # dedupe alone (and used below)
     glyphs_deduped = list(dedupe(glyphs))
     print("Deduped penup distance: %9d" % total_penup_travel(glyphs_deduped))
@@ -141,10 +151,12 @@ def optimize_sequence(paths):
     glyphs_sorted = sorted(glyphs, key=lambda st: st.first)
     print("Sorted penup distance:  %9d" % total_penup_travel(glyphs_sorted))
     print("Sorted total distance:  %9d" % total_travel(glyphs_sorted))
+    # save_svg([ps.paths for ps in glyphs_sorted], "sorted")
 
-    glyphs_reordered = reorder_greedy(glyphs)
-    print("Greedy penup:  %9d" % (total_penup_travel(glyphs_reordered)))
-    print("Greedy total:  %9d" % (total_travel(glyphs_reordered)))
+    # glyphs_reordered = reorder_greedy(glyphs)
+    # print("Greedy penup:  %9d" % (total_penup_travel(glyphs_reordered)))
+    # print("Greedy total:  %9d" % (total_travel(glyphs_reordered)))
+    # save_svg([ps.paths for ps in glyphs_reordered], "reordered")
 
     paths_out = [ps.paths for ps in glyphs_sorted]
     return paths_out

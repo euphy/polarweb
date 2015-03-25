@@ -21,7 +21,6 @@ class FrameBuffer():
 
     def write(self, frame):
         self.frame = frame
-        cv2.imshow('sample', frame)
         gevent.sleep(0.001)
 
     def read(self):

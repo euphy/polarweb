@@ -18,19 +18,19 @@ MACHINES = [
      "spec": {
         "width": 725,
         "height": 980,
-        "comm_port": "COM40",
+        "comm_port": "COM8",
         "baud_rate": 57600,
         "default_page": "A1"}
     }
-    ,
-    {"name": "right",
-     "spec": {
-        "width": 725,
-        "height": 980,
-        "comm_port": "COM39",
-        "baud_rate": 57600,
-        "default_page": "A1"}
-    }
+    # ,
+    # {"name": "right",
+    #  "spec": {
+    #     "width": 725,
+    #     "height": 980,
+    #     "comm_port": "COM39",
+    #     "baud_rate": 57600,
+    #     "default_page": "A1"}
+    # }
 ]
 
 ARTWORK_ACQUIRE_METHOD = {
@@ -38,7 +38,13 @@ ARTWORK_ACQUIRE_METHOD = {
     "module": "polarweb.models.acquire"
 }
 
-CAMERA_NUM = 1
+CAMERA_NUM = 0
 
 # Values are 'none' or 'rotate cw'
 CAMERA_ORIENTATION = 'rotate cw'
+
+# Camera will ignore faces below this size
+MIN_FACE_SIZE = 150
+
+# Face must stay in the same place for this many cycles before a lock happens.
+FACE_LOCK_VALUE = 15

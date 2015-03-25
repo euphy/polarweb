@@ -3,8 +3,9 @@ from polarweb.drawing_planner import optimize_sequence
 
 __author__ = 'sandy_000'
 
-with open('test.json', 'r') as data_file:
+with open('20150325-223051.5640009816.json', 'r') as data_file:
     paths = json.load(data_file)['paths']
 
-opt_paths = optimize_sequence(paths)
+optimised_paths = optimize_sequence(paths)
+
 
