@@ -41,4 +41,3 @@ class Machines(dict):
         self.ports = list(list_ports.comports())
         print "Com ports: %s" % self.ports
         return self.ports
-

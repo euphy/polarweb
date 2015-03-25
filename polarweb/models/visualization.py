@@ -38,7 +38,9 @@ class VisualizationThread(Greenlet):
     def read_jpeg_bytes(self, continuous=False):
         f = self.read()
         if not np.array_equal(self.last_served, f) or continuous:
-            img = Image.fromarray(f, 'RGB')
+            b, g, r = cv2.split(f)
+
+            img = Image.fromarray(cv2.merge([r, g, b]), 'RGB')
             out_bytes = io.BytesIO()
             img.save(out_bytes, 'jpeg')
             self.last_served = f
@@ -164,7 +166,7 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
         captioned_image(shutter(initial_frame),
                         caption=['Finished tracing...'])
     viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(4)
+    gevent.sleep(2)
 
     vector_process_wait = \
         captioned_image(shutter(initial_frame),
@@ -172,7 +174,7 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
                                  '',
                                  '...'])
     viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(4)
+    gevent.sleep(2)
 
     vector_process_wait = \
         captioned_image(shutter(initial_frame),
@@ -182,7 +184,7 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
                                  '',
                                  'Now drawing!'])
     viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(4)
+    gevent.sleep(2)
 
     prog, now = tracing_thread.get_progress()
     return now['paths']

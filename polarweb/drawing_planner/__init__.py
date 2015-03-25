@@ -1,5 +1,7 @@
 from collections import defaultdict
+import copy
 import sys
+
 
 class Glyph():
     def __init__(self, paths):
@@ -14,12 +16,7 @@ class Glyph():
 
 def build_glyphs(paths):
     gs = [Glyph(paths=path) for path in paths]
-    initials = list()
-    for g in gs:
-        initials.append(g.first)
-        initials.append(g.last)
-
-    return gs, initials
+    return gs
 
 
 def extract_glyph_with_initial(glyphs, initial):
@@ -41,19 +38,58 @@ def make_initial_first(g, initial):
         raise Exception("Initial (%s) was not in glyph" % initial)
 
 def find_nearest(arr, value):
-    print "Arr: %s" % arr
-    print "Value: %s" % value
     n = [list((abs(i[0]-value[0]), abs(i[1]-value[1]))) for i in arr]
     idx = n.index(min(n))
     return arr[idx]
 
-def optimize_sequence(paths):
-    # glyphs is a list of paths
-    # initials is a list of start and end points
-    glyphs, initials = build_glyphs(paths)
-    print("Total Glyphs: %d" % len(glyphs))
-    print("Total initials: %d" % len(initials))
 
+def distance_between(one, other):
+    return abs(other[0] - one[0]) + abs(other[1] - one[1])
+
+def total_travel(glyphs):
+    if not glyphs:
+        return 0
+
+    travel = 0
+    for g in glyphs:
+        last = g.first
+        for p in g.paths[1:]:
+            d = distance_between(last, p)
+            travel += d
+            last = p
+    return travel
+
+def total_penup_travel(glyphs):
+    if not glyphs:
+        return 0
+
+    travel = 0
+    last = glyphs[0]
+    for g in glyphs[1:]:
+        d = distance_between(last.last, g.first)
+        travel += d
+        last = g
+    return travel
+
+def dedupe(gs):
+    "Use Glyph.__hash__() to dedupe the list of glyphs"
+    seen = set()
+    for g in gs:
+        h = hash(g)
+        if h not in seen:
+            yield g
+            seen.add(h)
+
+
+def reorder_greedy(glyphs):
+    gs = copy.copy(glyphs)
+    initials = list()
+    for g in gs:
+        initials.append(g.first)
+        initials.append(g.last)
+
+    print("Total Glyphs: %d" % len(gs))
+    print("Total initials: %d" % len(initials))
     """
     #. Pick an initial.
 
@@ -67,17 +103,14 @@ def optimize_sequence(paths):
     go back to start until there are no glyphs left
 
     """
-
     queue = list()
-
     initials.sort()
     last = initials[0]
-
     while initials:
-        #. Find an initial closest to the last glyph's terminal point
+        # . Find an initial closest to the last glyph's terminal point
         next = find_nearest(initials, last)
 
-        glyph = extract_glyph_with_initial(glyphs, next)
+        glyph = extract_glyph_with_initial(gs, next)
         glyph = make_initial_first(glyph, next)
         queue.append(glyph)
 
@@ -87,25 +120,31 @@ def optimize_sequence(paths):
 
         last = glyph.last
 
-    # No sorting
+    return queue
+
+
+def optimize_sequence(paths):
+    # glyphs is a list of paths
+    # initials is a list of start and end points
+    glyphs = build_glyphs(paths)
     print("Initial penup distance: %9d" % total_penup_travel(glyphs))
     print("Initial total distance: %9d" % total_travel(glyphs))
     
     # dedupe alone (and used below)
-    glyphs = list(dedupe(glyphs))
-    print("Deduped penup distance: %9d" % total_penup_travel(glyphs))
-    print("Deduped total distance: %9d" % total_travel(glyphs))
+    glyphs_deduped = list(dedupe(glyphs))
+    print("Deduped penup distance: %9d" % total_penup_travel(glyphs_deduped))
+    print("Deduped total distance: %9d" % total_travel(glyphs_deduped))
     
     # easy sort: sort all glyphs by starting point
     #
     # This is O(n log n) because it's simply a sort.
-    sorted_g = sorted(glyphs,
-                      key=lambda st: st.start or tuple())  # add default key in case 'start' is missing.
-    print("Sorted penup distance:  %9d" % total_penup_travel(sorted_g))
-    print("Sorted total distance:  %9d" % total_travel(sorted_g))
+    glyphs_sorted = sorted(glyphs, key=lambda st: st.first)
+    print("Sorted penup distance:  %9d" % total_penup_travel(glyphs_sorted))
+    print("Sorted total distance:  %9d" % total_travel(glyphs_sorted))
 
-    greedy = reorder_greedy(glyphs)
-    print("Greedy penup:  %9d" % (total_penup_travel(greedy)))
-    print("Greedy total:  %9d" % (total_travel(greedy)))
+    glyphs_reordered = reorder_greedy(glyphs)
+    print("Greedy penup:  %9d" % (total_penup_travel(glyphs_reordered)))
+    print("Greedy total:  %9d" % (total_travel(glyphs_reordered)))
 
-    return greedy
+    paths_out = [ps.paths for ps in glyphs_sorted]
+    return paths_out

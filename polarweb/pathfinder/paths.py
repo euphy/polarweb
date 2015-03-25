@@ -107,7 +107,7 @@ def filter_paths(paths, min_length=0, max_paths=0):
     return paths
 
 
-def paths2svg(paths, document_size, out_file, scale=1, show_nodes=False, outline=False, page=None, panel=None):
+def paths2svg(paths, document_size, out_file, scale=1, show_nodes=False, outline=False, page=None, panel=None, show_travel=True):
     """
     Write an svg file to preview the paths.
     """
@@ -146,12 +146,22 @@ def paths2svg(paths, document_size, out_file, scale=1, show_nodes=False, outline
                 f.write("Z\" stroke-width=\"5\" stroke=\"#0F0\" fill=\"#FFF\" fill-opacity=\"0.5\"/>")
 
 
-        # draw a black line for each edge
+        # draw a black line for each path
+        start_point = [0, 0]
         for path in paths:
+            if show_travel:
+                f.write("<path d=\"M%d %d" % (start_point[0]*scale, start_point[1]*scale))
+                f.write(" L%s %s" % ((path[0][0]*scale), (path[0][1]*scale)))
+                f.write("\" stroke-width=\"1\" stroke=\"#FF0\" fill=\"none\"/>")
+
+
+            # Actual line
             f.write("<path d=\"M%d %d" % (path[0][0]*scale, path[0][1]*scale))
             for node in path[1:]:
                 f.write(" L%s %s" % ((node[0]*scale), (node[1]*scale)))
             f.write("\" stroke-width=\"1\" stroke=\"#000\" fill=\"none\"/>")
+
+            start_point = path[-1] #  last point
 
         # draw a red circle for each node if `show_nodes`
         if show_nodes:

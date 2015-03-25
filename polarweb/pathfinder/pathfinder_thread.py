@@ -139,15 +139,15 @@ class PathfinderThread(Thread):
                                         (self.stage_tic - self.stage_start)
 
         # # Now sequence the paths so that there is less travel time
-        # self.stage_start = time.clock()
-        # self.progress_stage = 7
-        # self.progress[self.progress_stage]['status'] = 'Started'
-        # paths = optimize_sequence(paths)
-        # time.sleep(slug_factor)
-        # self.stage_tic = time.clock()
-        # print "Sequence optimized in %s" % (self.stage_tic - self.stage_start)
-        # self.progress[self.progress_stage]['status'] = "%ss" % \
-        #                                 (self.stage_tic - self.stage_start)
+        self.stage_start = time.clock()
+        self.progress_stage = 7
+        self.progress[self.progress_stage]['status'] = 'Started'
+        paths = optimize_sequence(paths)
+        time.sleep(slug_factor)
+        self.stage_tic = time.clock()
+        print "Sequence optimized in %s" % (self.stage_tic - self.stage_start)
+        self.progress[self.progress_stage]['status'] = "%ss" % \
+                                        (self.stage_tic - self.stage_start)
 
         # Save SVG
         self.stage_start = time.clock()
