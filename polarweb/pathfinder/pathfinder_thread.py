@@ -53,7 +53,7 @@ class PathfinderThread(Thread):
         self.progress_stage = 0
 
         # Set up timing stuff
-        slug_factor = 2
+        slug_factor = 0
         self.process_start = time.clock()
         self.stage_start = self.process_start
         self.stage_tic = self.process_start
