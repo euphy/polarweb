@@ -67,15 +67,22 @@ def captioned_image(frame, caption=[]):
     """
     # print "Caption: %s" % caption
     row = 30
+    c = copy.copy(frame)
     for line in caption:
-        cv2.putText(frame,
+        cv2.putText(c,
                     line,
                     (5, row),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     1.0,
-                    (255, 255, 255))
+                    (50, 50, 50), 5)
+        cv2.putText(c,
+                    line,
+                    (5, row),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0,
+                    (255, 255, 255), 2)
         row += 32
-    return frame
+    return c
 
 
 def resize(step_input, initial_frame):
@@ -114,13 +121,16 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
         ]
 
     initial_frame = cv2.imread(img_filenames['raw'])
+    last_frame = None
+
     for step in sequence:
         print "STEP: %s" % step
         if 'kwargs' in step:
             step_input = cv2.imread(img_filenames[step['filename_key']])
             h, w = initial_frame.shape[:2]
             step_input = cv2.resize(step_input, (w, h))
-            step['kwargs']['caption']
+            if step['name'] is 'posterized':
+                last_frame = copy.copy(step_input)
             step_frame = step['method'](step_input, **step['kwargs'])
         else:
             step_frame = step['method'](initial_frame)
@@ -129,10 +139,9 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
             viz.get_frame_buffer().write(step_frame)
             gevent.sleep(int(step['duration']))
 
-    # Now display vector stuff
-    # Blank screen for a second
+    # Now display pathfinder stuff
     vector_process_wait = \
-        captioned_image(shutter(initial_frame),
+        captioned_image(last_frame,
                         caption=["Tracing image..."])
     viz.get_frame_buffer().write(vector_process_wait)
     gevent.sleep(1)
@@ -146,7 +155,7 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
         # rebuild the frame if something has changed
         if now['status'] != last_now['status']:
             vector_process_wait = \
-                captioned_image(shutter(initial_frame),
+                captioned_image(last_frame,
                                 caption=["Tracing image...",
                                          now['name'],
                                          now['status']])
@@ -164,27 +173,13 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
     # Present some cleanup slides
     vector_process_wait = \
         captioned_image(shutter(initial_frame),
-                        caption=['Finished tracing...'])
-    viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(2)
-
-    vector_process_wait = \
-        captioned_image(shutter(initial_frame),
-                        caption=['Finished tracing...',
-                                 '',
-                                 '...'])
-    viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(2)
-
-    vector_process_wait = \
-        captioned_image(shutter(initial_frame),
                         caption=['Finished tracing...',
                                  '',
                                  '...',
                                  '',
                                  'Now drawing!'])
     viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(2)
+    gevent.sleep(4)
 
     prog, now = tracing_thread.get_progress()
     return now['paths']

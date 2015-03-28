@@ -1,5 +1,6 @@
 import base64
 import json
+import cv2
 from flask import Flask, jsonify, render_template, flash, Response, \
     send_file, make_response, request
 from flask_assets import Environment, Bundle
@@ -78,6 +79,13 @@ def outgoing_event_signaller(event=None, target=None, value=None):
 
     return True
 
+def shutdown_server():
+    socketio.server.stop()
+    exit()
+    # func = request.environ.get('werkzeug.server.shutdown')
+    # if func is None:
+    #     raise RuntimeError('Not running with the Werkzeug Server')
+    # func()
 
 # ==================================================================
 #    Routes for HTML
@@ -104,6 +112,10 @@ def start():
     print "On"
     return render_template("live.html", machines=app.machines)
 
+@app.route('/shutdown')
+def shutdown():
+    shutdown_server()
+    return 'Server shutting down...'
 
 @app.route('/offline')
 def offline():
@@ -128,6 +140,7 @@ def video_feed():
 def feed(message):
     # print "app %s" % app.streaming
     while app.streaming:
+        cv2.imshow("viz", app.viz.read())
         v = app.viz.read_jpeg_bytes()
         if v is not None:
             # print "v"

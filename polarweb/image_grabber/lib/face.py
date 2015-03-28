@@ -127,7 +127,8 @@ class Tracking(object):
     def highlight_faces(self, frame, scale, all_faces=None, big_faces=None, debug=False):
         first = True
         white = (255, 255, 255)
-        msg = ["",""]
+        black = (50, 50, 50)
+        msg = ["", ""]
 
 
         for key, evidence in self.faces_by_size():
@@ -135,9 +136,9 @@ class Tracking(object):
 
             score_r = r * float(evidence['score']) / float(self.score_max)
             cv2.circle(frame, (x, y), int(r),
-                       (0, 255, 0), 2)
+                       (0, 255, 0), 3)
             cv2.circle(frame, (x, y), int(score_r),
-                       (0, 255, 0), 1)
+                       (0, 255, 0), 3)
 
             y_offset = y + int(r) + 25
             cv2.putText(frame, "id: %s" % key, (x, y_offset),
@@ -161,8 +162,10 @@ class Tracking(object):
 
                 score_percent = float(evidence['score']) / float(self.score_max) * 100.0
                 msg = ["Locking... %d%%" % score_percent, ""]
-                cv2.putText(frame, "Locking... %d%%" % score_percent, (5, 25),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
+                cv2.putText(frame, msg[0], (5, 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, black, 6)
+                cv2.putText(frame, msg[0], (5, 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, white, 2)
 
                 first = False
 
@@ -174,10 +177,14 @@ class Tracking(object):
                 msg = ["Looking for", "people to draw.."]
 
         cv2.putText(frame, msg[0], (5, 25),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, white)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, black, 6)
         cv2.putText(frame, msg[1], (5, 25+35),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, white)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, black, 6)
 
+        cv2.putText(frame, msg[0], (5, 25),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, white, 2)
+        cv2.putText(frame, msg[1], (5, 25+35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, white, 2)
 
 
 class Framing(object):

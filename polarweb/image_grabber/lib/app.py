@@ -98,7 +98,7 @@ class ImageGrabber(object):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         filenames['greyscale'] = self.save_image_as_file(img, 'png')
 
-        # img = cv2.equalizeHist(img)
+        img = cv2.equalizeHist(img)
         filenames['equalized'] = self.save_image_as_file(img, 'png')
 
         img = self.blur_image(img)
