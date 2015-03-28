@@ -236,7 +236,7 @@ class Polargraph():
 
         """
 
-        print "%s Update status %s" % (self.name, self.status)
+        # print "%s Update status %s" % (self.name, self.status)
         try:
             if self.status == 'serving':
                 pass
