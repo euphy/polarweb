@@ -15,6 +15,7 @@ import gevent
 
 import serial
 from euclid import Vector2
+from polarweb.config import SETTINGS
 
 from polarweb.models import acquire, visualization
 from polarweb.pathfinder import paths2svg
@@ -126,6 +127,12 @@ class Polargraph():
 
         self.commands = {'pen_up': 'C14,20,END',
                          'pen_down': 'C13,130,END'}
+
+        # Set up the trace settings defaults from the settings file
+        self.trace_settings = {'posterize_levels': SETTINGS.POSTERIZE_LEVELS,
+                               'min_path_len': SETTINGS.MIN_PATH_LENGTH,
+                               'max_path_count': SETTINGS.MAX_PATH_COUNT,
+                               'smoothing_levels': SETTINGS.PATH_SMOOTHING_LEVELS}
 
         print "Initialised: %s." % self
 

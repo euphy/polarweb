@@ -139,7 +139,57 @@
                                <input id="accel-input" name="accel-input" type="text" placeholder="10000" class="input-xlarge">
                             </div>
                             <button type="submit" class="btn btn-lg btn-primary" onclick="$.post('api/m/{{machine_name}}/speed', {acceleration: )">Set speed</button>
+
                             </form>
+                        </div>
+                    </div>
+
+                    <h3>Tracing:</h3>
+                    <div class="form-group">
+                        <div class="control-group">
+                            <input id="posterizeLevelsInput" type="text" data-slider-min="2" data-slider-max="20" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                            <span id="posterizeLevelsValLabel">Posterize levels: <span id="posterizeLevelsVal">3</span></span>
+                            <script language="JavaScript">
+                                $("#posterizeLevelsInput").slider();
+                                $("#posterizeLevelsInput").on("slide", function(slideEvt) {
+                                    $("#posterizeLevelsVal").text(slideEvt.value);
+                                });
+                            </script>
+                        </div>
+                        <div class="control-group">
+                            <input id="minLineLengthInput" type="text" data-slider-min="3" data-slider-max="200" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                            <span id="minLineLengthValLabel">Min path length: <span id="minLineLengthVal">3</span></span>
+                            <script language="JavaScript">
+                                $("#minLineLengthInput").slider();
+                                $("#minLineLengthInput").on("slide", function(slideEvt) {
+                                    $("#minLineLengthVal").text(slideEvt.value);
+                                });
+                            </script>
+                        </div>
+                        <div class="control-group">
+                            <input id="maxPathsInput" type="text" data-slider-min="20" data-slider-max="10000" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                            <span id="maxPathsValLabel">Max number of paths: <span id="maxPathsVal">3</span></span>
+                            <script language="JavaScript">
+                                $("#maxPathsInput").slider();
+                                $("#maxPathsInput").on("slide", function(slideEvt) {
+                                    $("#maxPathsVal").text(slideEvt.value);
+                                });
+                            </script>
+                        </div>
+                        <div class="control-group" id="smoothing-levels-control">
+                            <form method="post" action="api/m/{{machine_name}}/settings/trace/smoothing-levels">
+                                <input id="smoothingLevelsInput" type="text" data-slider-min="1" data-slider-max="20" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                                <span id="smoothingLevelsValLabel">Path smoothing: <span id="smoothingLevelsVal">3</span></span>
+                                <input id="new-value-input">
+                            </form>
+                            <script language="JavaScript">
+                                $("#smoothingLevelsInput").slider();
+                                $("#smoothingLevelsInput").on("slide", function(slideEvt) {
+                                    $("#smoothingLevelsVal").text(slideEvt.value);
+                                    $("#smoothing-levels-control form #new-value-input").val(slideEvt.value);
+                                    $("#smoothing-levels-control form").submit();
+                                });
+                            </script>
                         </div>
                     </div>
                     <h3>Status:</h3>

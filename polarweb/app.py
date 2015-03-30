@@ -7,6 +7,7 @@ from flask_assets import Environment, Bundle
 from flask_socketio import SocketIO, emit
 import gevent
 import jinja2
+from polarweb import config
 from polarweb.models.machines import Machines
 from polarweb.models.visualization import VisualizationThread
 
@@ -17,19 +18,20 @@ assets = Environment(app)
 js = Bundle('../bower_components/jquery/dist/jquery.js',
             '../bower_components/bootstrap/dist/js/bootstrap.js',
             '../bower_components/socket.io-client/dist/socket.io.min.js',
+            '../bower_components/seiyria-bootstrap-slider/dist/bootstrap-slider.min.js',
             output='packed.js')
 assets.register('js_all', js)
 
 css = Bundle('../bower_components/bootstrap/dist/css/bootstrap.css',
              '../templates/polarweb.css',
+             '../bower_components/seiyria-bootstrap-slider/css/bootstrap-slider.css',
              output='polarweb.css')
 assets.register('polarweb_css', css)
 
-# app.debug = True
 app.secret_key = '\x1e\x94)\x06\x08\x14Z\x80\xea&O\x8b\xfe\x1eL\x84\xa3<\xec\x83))\xa6\x8f'
 app.streaming = False
 socketio = SocketIO(app)
-# app.debug = True
+app.debug = True
 app.viz = None
 
 
@@ -38,6 +40,7 @@ def init_machines():
     print "app.viz %s" % app.viz
     app.machines = Machines(outgoing_event_signaller=outgoing_event_signaller,
                             viz_thread=app.viz)
+    app.SETTINGS = config.SETTINGS
 
 
 def format_for_web(target, value):
@@ -232,6 +235,24 @@ def control_drawing(machine_name, command):
     """
     result = app.machines[machine_name].control_drawing(command)
     return jsonify(result)
+
+@app.route('/api/m/<machine_name>/settings/trace/<command>', methods=['POST', 'GET'])
+def change_settings(machine_name, command):
+    """
+    Sends commands to change the trace settings for a machine: Posterisation
+    levels, min line length, max lines, line smoothing
+    :param machine_name:
+    :param command:
+    :param new_value:
+    :return:
+    """
+    new_value = str(request.form['new-value-input'])
+    app.machines[machine_name].trace_settings[command] = new_value
+
+    print command
+    print new_value
+    return jsonify(app.machines[machine_name].state())
+
 
 
 @app.route('/api/m/<machine_name>/speed', methods=['POST'])

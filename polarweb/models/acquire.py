@@ -63,6 +63,9 @@ def acquire_face_track(p, event_callback=None, viz=None):
                    value='Got images.')
 
     tracing_thread = PathfinderThread(input_img=img_filenames['final'],
+                                      min_path_len=p.trace_settings['min_path_length'],
+                                      max_path_count=p.trace_settings['max_path_count'],
+                                      smoothing_levels=p.trace_settings['path_smoothing_levels'],
                                       event_callback=event_callback)
     tracing_thread.start()
 

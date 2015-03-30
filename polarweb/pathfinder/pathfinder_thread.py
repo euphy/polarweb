@@ -5,6 +5,7 @@ import time
 from PIL import Image
 import numpy
 from paths import build_graph, build_paths, filter_paths, paths2svg, paths2json
+from polarweb.config import SETTINGS
 from polarweb.drawing_planner import optimize_sequence
 from polarweb.pathfinder.smoothing import apply_box_smoothing
 from decimation import subsampling_decimation, anchor_angle_error, \
@@ -33,7 +34,7 @@ class PathfinderThread(Thread):
 
     def __init__(self,
             input_img='./sampleinput.png',
-            min_path_len=20,
+            min_path_len=10,
             max_path_count=100,
             smoothing_levels=3,
             scale=3,

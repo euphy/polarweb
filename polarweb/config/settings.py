@@ -48,3 +48,9 @@ MIN_FACE_SIZE = 150
 
 # Face must stay in the same place for this many cycles before a lock happens.
 FACE_LOCK_VALUE = 15
+
+# Some tracing settings
+POSTERIZE_LEVELS = 5
+MIN_PATH_LENGTH = 20
+MAX_PATH_COUNT = 100
+PATH_SMOOTHING_LEVELS = 3
