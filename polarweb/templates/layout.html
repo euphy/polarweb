@@ -146,47 +146,56 @@
 
                     <h3>Tracing:</h3>
                     <div class="form-group">
-                        <div class="control-group">
-                            <input id="posterizeLevelsInput" type="text" data-slider-min="2" data-slider-max="20" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
-                            <span id="posterizeLevelsValLabel">Posterize levels: <span id="posterizeLevelsVal">3</span></span>
-                            <script language="JavaScript">
+                        <div class="control-group" id="posterize-levels-control">
+                            <form method="post" action="api/m/{{machine_name}}/settings/trace/posterize-levels">
+                                <input name="new-value-input" id="posterizeLevelsInput" type="text" data-slider-min="2" data-slider-max="20" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                                <span id="posterizeLevelsValLabel">Posterize levels: <span id="posterizeLevelsVal">3</span></span>
+                            </form>
+                            <script type="text/javascript">
+                                $("#posterize-levels-control form").on("submit", function (e) { e.preventDefault(); }
                                 $("#posterizeLevelsInput").slider();
                                 $("#posterizeLevelsInput").on("slide", function(slideEvt) {
                                     $("#posterizeLevelsVal").text(slideEvt.value);
+                                    $("#posterize-levels-control form").submit();
                                 });
                             </script>
                         </div>
-                        <div class="control-group">
-                            <input id="minLineLengthInput" type="text" data-slider-min="3" data-slider-max="200" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
-                            <span id="minLineLengthValLabel">Min path length: <span id="minLineLengthVal">3</span></span>
-                            <script language="JavaScript">
+                        <div class="control-group" id="min-line-length-control">
+                            <form method="post" action="api/m/{{machine_name}}/settings/trace/min-line-length">
+                                <input name="new-value-input" id="minLineLengthInput" type="text" data-slider-min="3" data-slider-max="200" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                                <span id="minLineLengthValLabel">Min path length: <span id="minLineLengthVal">3</span></span>
+                                <input type="hidden" name="new-value-input" id="new-value-input">
+                            </form>
+                            <script type="text/javascript">
                                 $("#minLineLengthInput").slider();
                                 $("#minLineLengthInput").on("slide", function(slideEvt) {
                                     $("#minLineLengthVal").text(slideEvt.value);
+                                    $("#min-line-length-control form").submit();
                                 });
                             </script>
                         </div>
-                        <div class="control-group">
-                            <input id="maxPathsInput" type="text" data-slider-min="20" data-slider-max="10000" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
-                            <span id="maxPathsValLabel">Max number of paths: <span id="maxPathsVal">3</span></span>
-                            <script language="JavaScript">
+                        <div class="control-group" id="max-paths-control">
+                            <form method="post" action="api/m/{{machine_name}}/settings/trace/max-paths-count">
+                                <input name="new-value-input" id="maxPathsInput" type="text" data-slider-min="20" data-slider-max="10000" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                                <span id="maxPathsValLabel">Max number of paths: <span id="maxPathsVal">3</span></span>
+                            </form>
+                            <script type="text/javascript">
                                 $("#maxPathsInput").slider();
                                 $("#maxPathsInput").on("slide", function(slideEvt) {
                                     $("#maxPathsVal").text(slideEvt.value);
+                                    $("#max-paths-control form").submit();
                                 });
                             </script>
                         </div>
                         <div class="control-group" id="smoothing-levels-control">
-                            <form method="post" action="api/m/{{machine_name}}/settings/trace/smoothing-levels">
-                                <input id="smoothingLevelsInput" type="text" data-slider-min="1" data-slider-max="20" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
+                            <form method="post" action="api/m/{{machine_name}}/settings/trace/path-smoothing-levels">
+                                <input name="new-value-input" id="smoothingLevelsInput" type="text" data-slider-min="1" data-slider-max="20" data-slider-step="1" data-slider-value="3" data-slider-tooltip="hide"/>
                                 <span id="smoothingLevelsValLabel">Path smoothing: <span id="smoothingLevelsVal">3</span></span>
-                                <input id="new-value-input">
                             </form>
-                            <script language="JavaScript">
+                            <script type="text/javascript">
                                 $("#smoothingLevelsInput").slider();
                                 $("#smoothingLevelsInput").on("slide", function(slideEvt) {
                                     $("#smoothingLevelsVal").text(slideEvt.value);
-                                    $("#smoothing-levels-control form #new-value-input").val(slideEvt.value);
                                     $("#smoothing-levels-control form").submit();
                                 });
                             </script>
@@ -222,9 +231,9 @@
         // event handler for server sent data
         // the data is displayed in the "Received" section of the page
         socket.on('status_update', function(msg) {
-            console.log('Looking for: #'+msg.target);
-            console.log('Found: ' + $('#'+msg.target));
-            console.log('Want to change to: ' + msg.html);
+//            console.log('Looking for: #'+msg.target);
+  //          console.log('Found: ' + $('#'+msg.target));
+    //        console.log('Want to change to: ' + msg.html);
             $('#'+msg.target).html(msg.html);
         });
     });

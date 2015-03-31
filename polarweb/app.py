@@ -235,7 +235,8 @@ def control_drawing(machine_name, command):
     result = app.machines[machine_name].control_drawing(command)
     return jsonify(result)
 
-@app.route('/api/m/<machine_name>/settings/trace/<command>', methods=['POST', 'GET'])
+@app.route('/api/m/<machine_name>/settings/trace/<command>',
+           methods=['POST', 'GET'])
 def change_settings(machine_name, command):
     """
     Sends commands to change the trace settings for a machine: Posterisation
@@ -245,7 +246,10 @@ def change_settings(machine_name, command):
     :param new_value:
     :return:
     """
+    print "Command: %s" % command
     new_value = str(request.form['new-value-input'])
+    print "New value: %s" % new_value
+    new_value = new_value.replace('-', '_')
     app.machines[machine_name].trace_settings[command] = new_value
 
     print command
