@@ -18,7 +18,6 @@ def get_acquire_func(method_name, module):
     Alternatively it may return None, in which case there was no
     acquisition source configured.
     """
-    print "get acquire func"
     mod = import_module(module)
     return getattr(mod, method_name)
 
@@ -28,10 +27,6 @@ def acquire_face_track(p, event_callback=None, viz=None):
     """
     print "%s In acquire face track" % p.name
     global acquisition_lock
-    print "%s Looking at ACQUISITION LOCK %s, it is %s" % (p.name,
-                                                           id(acquisition_lock),
-                                                           acquisition_lock)
-
     if not acquisition_lock:
         print "%s Setting ACQUISITION LOCK %s to True" % (p.name,
                                                           id(acquisition_lock))

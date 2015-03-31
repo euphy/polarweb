@@ -130,9 +130,9 @@ class Polargraph():
 
         # Set up the trace settings defaults from the settings file
         self.trace_settings = {'posterize_levels': SETTINGS.POSTERIZE_LEVELS,
-                               'min_path_len': SETTINGS.MIN_PATH_LENGTH,
+                               'min_path_length': SETTINGS.MIN_PATH_LENGTH,
                                'max_path_count': SETTINGS.MAX_PATH_COUNT,
-                               'smoothing_levels': SETTINGS.PATH_SMOOTHING_LEVELS}
+                               'path_smoothing_levels': SETTINGS.PATH_SMOOTHING_LEVELS}
 
         print "Initialised: %s." % self
 

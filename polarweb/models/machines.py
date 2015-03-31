@@ -39,5 +39,7 @@ class Machines(dict):
 
     def list_ports(self):
         self.ports = list(list_ports.comports())
-        print "Com ports: %s" % self.ports
+        print "Comm ports:"
+        for p in self.ports:
+            print p
         return self.ports

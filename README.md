@@ -43,10 +43,6 @@ Core:
 
 http://pyserial.sourceforge.net/
 
-Indicator (Digispark RGB LED)
-* Arduino.usbdevice - Copy https://github.com/digistump/DigisparkExamplePrograms/blob/master/Python/DigiUSB/source/arduino into /usr/lib/python2.7/dist-packages
-* PyUSB pip install pyusb
-
 Image Grabber:
 * OpenCV 2.* (cv2)
 
@@ -57,7 +53,7 @@ Pi:
 
 http://opencvpython.blogspot.in/2012/05/install-opencv-in-windows-for-python.html
 
-http://stackoverflow.com/questions/10417108/what-is-different-between-all-these-opencv-python-interfaces
+http://stackoverflow com/questions/10417108/what-is-different-between-all-these-opencv-python-interfaces
 
 Pathfinder:
 * Pillow
