@@ -153,10 +153,10 @@ def optimize_sequence(paths):
     print("Sorted total distance:  %9d" % total_travel(glyphs_sorted))
     # save_svg([ps.paths for ps in glyphs_sorted], "sorted")
 
-    # glyphs_reordered = reorder_greedy(glyphs)
-    # print("Greedy penup:  %9d" % (total_penup_travel(glyphs_reordered)))
-    # print("Greedy total:  %9d" % (total_travel(glyphs_reordered)))
-    # save_svg([ps.paths for ps in glyphs_reordered], "reordered")
+    glyphs_reordered = reorder_greedy(glyphs)
+    print("Greedy penup:  %9d" % (total_penup_travel(glyphs_reordered)))
+    print("Greedy total:  %9d" % (total_travel(glyphs_reordered)))
+    save_svg([ps.paths for ps in glyphs_reordered], "reordered")
 
-    paths_out = [ps.paths for ps in glyphs_sorted]
+    paths_out = [ps.paths for ps in glyphs_reordered]
     return paths_out

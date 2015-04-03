@@ -77,7 +77,9 @@ class Polargraph():
         self.page_started = False
 
         self.serial = None
-        self.queue = deque(['C17,400,400,10,END'])
+        self.queue = deque(['C17,400,400,10,END',
+                            "C31,3000,END",
+                            "C32,3000,END"])
         self.received_log = deque()
         self.reading = False
 
@@ -424,19 +426,19 @@ class Polargraph():
 
     def control_pen(self, command):
         if command == 'up':
-            self.queue.append(self.commands['pen_up'])
+            self.queue.appendleft(self.commands['pen_up'])
         elif command == 'down':
-            self.queue.append(self.commands['pen_down'])
+            self.queue.appendleft(self.commands['pen_down'])
 
         return self.state()
 
     def control_movement(self, data):
         if 'speed' in data:
-            self.queue.append("C31,%s,END" % data['speed'])
+            self.queue.appendleft("C31,%s,END" % data['speed'])
         if 'accel' in data:
-            self.queue.append("C32,%s,END" % data['accel'])
+            self.queue.appendleft("C32,%s,END" % data['accel'])
         if 'calibrate' in data:
-            self.queue.append("C48,END")
+            self.queue.appendleft("C48,END")
 
         return self.state()
 
