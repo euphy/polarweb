@@ -114,7 +114,7 @@ class Polargraph():
         self.start_serial_comms()
 
         # and the event update_status
-        freq = random.uniform(0.5, 1.1)
+        freq = random.uniform(0.8, 1.1)
         self.machine_status_process = threading.Thread(target=update_machine_status,
                                            args=(freq, self, viz),
                                            name="update_machine_%s" % id(self))
@@ -241,8 +241,7 @@ class Polargraph():
         behaves when, for instance, the queue empties and there's no lines
         left to dispatch.
 
-        It's designed to be called repeatedly.
-
+        It should to be called repeatedly.
         """
 
         # print "%s Update status %s" % (self.name, self.status)
@@ -273,10 +272,6 @@ class Polargraph():
                     acquire.acquisition_lock = False
 
             elif self.status == 'acquired':
-                # self.viz.get_frame_buffer().write(
-                #     visualization.captioned_image(
-                #         visualization.shutter(self.viz.camera.capture_frame()),
-                #         caption=self.generate_drawing_caption()))
                 if not self.paths:
                     self.status = 'idle'
                     raise ValueError('Paths were not found, '
@@ -297,9 +292,6 @@ class Polargraph():
                     print ('%s Appending %s commands to the queue.'
                            % (self.name, len(commands)))
                     self.queue.extend(commands)
-                    # if self.queue:
-                    #     self.status = 'serving'
-                    # else:
                     self.status = 'idle'
                 except ValueError as ve:
                     print ve

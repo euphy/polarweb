@@ -44,7 +44,7 @@ CAMERA_NUM = 0
 CAMERA_ORIENTATION = 'rotate cw'
 
 # Camera will ignore faces below this size
-MIN_FACE_SIZE = 150
+MIN_FACE_SIZE = 100
 
 # Face must stay in the same place for this many cycles before a lock happens.
 FACE_LOCK_VALUE = 15

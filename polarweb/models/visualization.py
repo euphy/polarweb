@@ -177,9 +177,20 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
                                  '',
                                  '...',
                                  '',
-                                 'Now drawing!'])
+                                 'Now busy drawing!',
+                                 '',
+                                 '...',
+                                 '',
+                                 '(Wait for one of the ',
+                                 'machines to finish',
+                                 'before you can get ',
+                                 'yourself drawn)'])
     viz.get_frame_buffer().write(vector_process_wait)
     gevent.sleep(4)
+
+    # Show a preview of the vector just traced
+
+
 
     prog, now = tracing_thread.get_progress()
     return now['paths']
