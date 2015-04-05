@@ -1,3 +1,4 @@
+import copy
 import os
 from threading import Thread
 import time
@@ -78,6 +79,7 @@ class PathfinderThread(Thread):
         paths = build_paths(graph)
         svg_filename = self.save_svg(paths, image.size, "00_paths")
         self.progress[self.progress_stage]['filename'] = svg_filename
+        self.progress[self.progress_stage]['paths'] = copy.copy(paths)
 
         time.sleep(slug_factor*2)
         self.stage_tic = time.clock()
@@ -93,8 +95,9 @@ class PathfinderThread(Thread):
                              max_paths=self.max_path_count)
         svg_filename = self.save_svg(paths, image.size, "01_filtered")
         self.progress[self.progress_stage]['filename'] = svg_filename
-        time.sleep(slug_factor)
+        self.progress[self.progress_stage]['paths'] = copy.copy(paths)
 
+        time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Filtered in %s" % (self.stage_tic - self.stage_start)
         self.progress[self.progress_stage]['status'] = "%ss" % \
@@ -106,6 +109,8 @@ class PathfinderThread(Thread):
         paths = apply_box_smoothing(paths, passes=3)
         svg_filename = self.save_svg(paths, image.size, "02_smoothed")
         self.progress[self.progress_stage]['filename'] = svg_filename
+        self.progress[self.progress_stage]['paths'] = copy.copy(paths)
+
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Smoothed in %s" % (self.stage_tic - self.stage_start)
@@ -121,6 +126,8 @@ class PathfinderThread(Thread):
         paths = subsampling_decimation(paths, anchor_angle_error, 0.05)
         svg_filename = self.save_svg(paths, image.size, "03_decimated")
         self.progress[self.progress_stage]['filename'] = svg_filename
+        self.progress[self.progress_stage]['paths'] = copy.copy(paths)
+
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Decimated in %s" % (self.stage_tic - self.stage_start)
@@ -133,6 +140,8 @@ class PathfinderThread(Thread):
         self.progress[self.progress_stage]['status'] = 'Started'
         paths = filter_paths(paths, min_length=4)
         self.progress[self.progress_stage]['filename'] = svg_filename
+        self.progress[self.progress_stage]['paths'] = copy.copy(paths)
+
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Cleanup filter in %s" % (self.stage_tic - self.stage_start)
@@ -144,6 +153,8 @@ class PathfinderThread(Thread):
         self.progress_stage = 7
         self.progress[self.progress_stage]['status'] = 'Started'
         paths = optimize_sequence(paths)
+        self.progress[self.progress_stage]['paths'] = copy.copy(paths)
+
         time.sleep(slug_factor)
         self.stage_tic = time.clock()
         print "Sequence optimized in %s" % (self.stage_tic - self.stage_start)

@@ -15,5 +15,8 @@
     "bootstrap": "~3.1.1",
     "socket.io-client": "0.9.16",
     "seiyria-bootstrap-slider": "4.5.6"
+  },
+  "resolutions": {
+    "seiyria-bootstrap-slider": "~4.7.4"
   }
 }

@@ -142,7 +142,6 @@ def video_feed():
 def feed(message):
     # print "app %s" % app.streaming
     while app.streaming:
-        # cv2.imshow("viz", app.viz.read())
         v = app.viz.read_jpeg_bytes()
         if v is not None:
             # print "v"

@@ -158,5 +158,7 @@ def optimize_sequence(paths):
     print("Greedy total:  %9d" % (total_travel(glyphs_reordered)))
     save_svg([ps.paths for ps in glyphs_reordered], "reordered")
 
+    # paths_out = [ps.paths for ps in glyphs_reordered]
+    # paths_out = [ps.paths for ps in glyphs_sorted]
     paths_out = [ps.paths for ps in glyphs_reordered]
     return paths_out

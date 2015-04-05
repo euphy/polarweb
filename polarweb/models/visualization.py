@@ -1,6 +1,7 @@
 import base64
 import copy
 import io
+import json
 from threading import Thread
 import traceback
 from PIL import Image
@@ -8,12 +9,14 @@ import cv2
 import gevent
 import numpy as np
 import time
+from os import path
 from polarweb.config import SETTINGS
 from polarweb.image_grabber.lib.app import ImageGrabber
 from gevent import Greenlet
 import gevent
 from polarweb.models.camera import Camera
 from polarweb.models.framebuffer import FrameBuffer
+from polarweb.models.geometry import Layout
 
 
 class VisualizationThread(Greenlet):
@@ -85,9 +88,87 @@ def captioned_image(frame, caption=[]):
     return c
 
 
-def resize(step_input, initial_frame):
-    return
+def test_render_vector(paths=None):
+    if not paths:
+        # Get the json
+        filename = path.join(path.split(path.dirname(path.abspath(__file__)))[0], 'drawing_planner', '20150325-223051.5640009816.json')
+        j = json.loads(open(filename).read())
+        paths = j['paths']
 
+    # get the image
+    bitmap = np.zeros([720,360,3], np.uint8)
+
+    v = render_vector(bitmap, paths)
+    return v
+
+def render_vector(input, paths, show_travel=True, show_live=False):
+    """
+    Takes a bitmap, and a set of paths as parameters, and draws the vectors
+    out onto the bitmap. Returns a copy of the input.
+
+    :param initial_frame:
+    :return:
+    """
+    out = copy.copy(input)
+
+    paths = scale_paths(input.shape, paths)
+
+    start_point = (0, 0)
+    for path in paths:
+        # draw travel lines
+        to = (int(path[0][0]), int(path[0][1]))
+        # print "From %s to %s" % (start_point, to)
+        if show_travel:
+            cv2.line(out, start_point, to, [0,100,100], 1)
+
+        for i in range(1, len(path)):
+            fr = (int(path[i-1][0]), int(path[i-1][1]))
+            to = (int(path[i][0]), int(path[i][1]))
+            # print "From %s to %s" % (fr, to)
+            cv2.line(out, fr, to, [200,200,00], 3)
+
+        start_point = (int(path[-1][0]), int(path[-1][1]))
+
+    if show_live:
+        cv2.imshow("output", out)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    return out
+
+def scale_paths(panel_shape, paths):
+    # Turn them into floats
+    for path_index, path in enumerate(paths):
+        for point_index, point in enumerate(path):
+            paths[path_index][point_index] = (float(point[0]), float(point[1]))
+
+
+    paths_shape = Layout.get_path_size(paths)
+    print "Paths size: %s" % str(paths_shape)
+
+    panel_ratio = panel_shape[0] / float(panel_shape[1])
+    paths_ratio = paths_shape[1] / float(paths_shape[0])
+
+    print "Panel ratio: %s" % panel_ratio
+    print "Paths ratio: %s" % paths_ratio
+
+    if panel_ratio > paths_ratio:
+        scaling = panel_shape[1] / paths_shape[0]
+    else:
+        scaling = panel_shape[0] / paths_shape[1]
+
+    print "Scaling: %s" % scaling
+    for path_index, path in enumerate(paths):
+        for point_index, point in enumerate(path):
+            paths[path_index][point_index] = (point[0]*scaling, point[1]*scaling)
+
+    return paths
+
+def height_to_width(self):
+    if self.size.x != 0.0:
+        return self.size.y / self.size.x
+    else:
+        return 1.0
 
 def visualise_capture_process(img_filenames, tracing_thread, viz=None):
     for key in img_filenames:
@@ -154,6 +235,13 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
 
         # rebuild the frame if something has changed
         if now['status'] != last_now['status']:
+            # new_paths = now.get('paths', None)
+            # if new_paths:
+            #     print "new paths"
+            #     last_frame = render_vector(shutter(last_frame), new_paths)
+            # else:
+            #     print "no new paths!"
+
             vector_process_wait = \
                 captioned_image(last_frame,
                                 caption=["Tracing image...",
@@ -171,26 +259,22 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
     tracing_thread.join()
 
     # Present some cleanup slides
+
     vector_process_wait = \
-        captioned_image(shutter(initial_frame),
+        captioned_image(last_frame,
                         caption=['Finished tracing...',
-                                 '',
-                                 '...',
-                                 '',
                                  'Now busy drawing!',
-                                 '',
-                                 '...',
-                                 '',
-                                 '(Wait for one of the ',
-                                 'machines to finish',
-                                 'before you can get ',
-                                 'yourself drawn)'])
+                                 '','','',
+                                 '','','',
+                                 '','','',
+                                 '','','',
+                                 '','',
+                                 'Please wait for a',
+                                 'machine to finish!'])
     viz.get_frame_buffer().write(vector_process_wait)
-    gevent.sleep(4)
 
-    # Show a preview of the vector just traced
-
-
-
+    # Get final paths
     prog, now = tracing_thread.get_progress()
+    gevent.sleep(2)
+
     return now['paths']
