@@ -125,7 +125,7 @@ def render_vector(input, paths, show_travel=True, show_live=False):
             fr = (int(path[i-1][0]), int(path[i-1][1]))
             to = (int(path[i][0]), int(path[i][1]))
             # print "From %s to %s" % (fr, to)
-            cv2.line(out, fr, to, [200,200,00], 3)
+            cv2.line(out, fr, to, [200,200,00], 2)
 
         start_point = (int(path[-1][0]), int(path[-1][1]))
 
@@ -137,6 +137,8 @@ def render_vector(input, paths, show_travel=True, show_live=False):
     return out
 
 def scale_paths(panel_shape, paths):
+    if not paths:
+        return list()
     # Turn them into floats
     for path_index, path in enumerate(paths):
         for point_index, point in enumerate(path):
@@ -235,12 +237,10 @@ def visualise_capture_process(img_filenames, tracing_thread, viz=None):
 
         # rebuild the frame if something has changed
         if now['status'] != last_now['status']:
-            # new_paths = now.get('paths', None)
-            # if new_paths:
-            #     print "new paths"
-            #     last_frame = render_vector(shutter(last_frame), new_paths)
-            # else:
-            #     print "no new paths!"
+            if SETTINGS.SHOW_PATHS_DURING_VIZ:
+                new_paths = now.get('paths', None)
+                if new_paths is not None and new_paths != last_now.get('paths', None):
+                    last_frame = render_vector(shutter(last_frame), new_paths)
 
             vector_process_wait = \
                 captioned_image(last_frame,

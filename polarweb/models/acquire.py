@@ -49,16 +49,20 @@ def acquire_face_track(p, event_callback=None, viz=None):
     required_score = SETTINGS.FACE_LOCK_VALUE \
         if hasattr(SETTINGS, 'FACE_LOCK_VALUE') else 15
 
+    print "Posterize levels: %s" % p.trace_settings['posterize_levels']
+
     grabber = ImageGrabber(debug=False,
                            required_score=required_score,
                            frame_buffer_func=viz.get_frame_buffer().write,
-                           min_face_size=min_face_size)
+                           min_face_size=min_face_size,
+                           posterize_levels=p.trace_settings['posterize_levels'],
+                           blur=p.trace_settings['blur'])
     img_filenames = grabber.get_images(filename="png")
     event_callback(target='capture_status-%s' % p.name,
                    value='Got images.')
 
     tracing_thread = PathfinderThread(input_img=img_filenames['final'],
-                                      min_path_len=p.trace_settings['min_path_length'],
+                                      min_path_length=p.trace_settings['min_path_length'],
                                       max_path_count=p.trace_settings['max_path_count'],
                                       smoothing_levels=p.trace_settings['path_smoothing_levels'],
                                       event_callback=event_callback)

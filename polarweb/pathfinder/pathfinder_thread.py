@@ -35,14 +35,14 @@ class PathfinderThread(Thread):
 
     def __init__(self,
             input_img='./sampleinput.png',
-            min_path_len=10,
+            min_path_length=10,
             max_path_count=100,
             smoothing_levels=3,
             scale=3,
             event_callback=None):
         Thread.__init__(self)
         self.input_img = input_img
-        self.min_path_len = min_path_len
+        self.min_path_length = min_path_length
         self.max_path_count = max_path_count
         self.smoothing_levels = smoothing_levels
         self.scale = scale
@@ -55,7 +55,7 @@ class PathfinderThread(Thread):
         self.progress_stage = 0
 
         # Set up timing stuff
-        slug_factor = 0
+        slug_factor = SETTINGS.PATHFINDER_MINIMUM_TIME
         self.process_start = time.clock()
         self.stage_start = self.process_start
         self.stage_tic = self.process_start
@@ -91,7 +91,7 @@ class PathfinderThread(Thread):
         self.progress[self.progress_stage]['status'] = 'Started'
 
         paths = filter_paths(paths,
-                             min_length=self.min_path_len,
+                             min_length=self.min_path_length,
                              max_paths=self.max_path_count)
         svg_filename = self.save_svg(paths, image.size, "01_filtered")
         self.progress[self.progress_stage]['filename'] = svg_filename

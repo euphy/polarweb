@@ -78,8 +78,8 @@ class Polargraph():
 
         self.serial = None
         self.queue = deque(['C17,400,400,10,END',
-                            "C31,3000,END",
-                            "C32,3000,END"])
+                            "C31,6000,END",
+                            "C32,6000,END"])
         self.received_log = deque()
         self.reading = False
 
@@ -134,7 +134,8 @@ class Polargraph():
         self.trace_settings = {'posterize_levels': SETTINGS.POSTERIZE_LEVELS,
                                'min_path_length': SETTINGS.MIN_PATH_LENGTH,
                                'max_path_count': SETTINGS.MAX_PATH_COUNT,
-                               'path_smoothing_levels': SETTINGS.PATH_SMOOTHING_LEVELS}
+                               'path_smoothing_levels': SETTINGS.PATH_SMOOTHING_LEVELS,
+                               'blur': SETTINGS.BLUR}
 
         print "Initialised: %s." % self
 
@@ -368,6 +369,7 @@ class Polargraph():
                                        .__str__()),
                   'layout design': str(self.layout.design),
                   'comm port': self.comm_port,
+                  'trace_settings': self.trace_settings,
         }
 
         if self.paths:

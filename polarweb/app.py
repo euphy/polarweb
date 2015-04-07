@@ -246,10 +246,11 @@ def change_settings(machine_name, command):
     :return:
     """
     print "Command: %s" % command
-    new_value = str(request.form['new-value-input'])
+    new_value = int(request.form['new-value-input'])
     print "New value: %s" % new_value
-    new_value = new_value.replace('-', '_')
+    command = str(command.replace('-', '_'))
     app.machines[machine_name].trace_settings[command] = new_value
+    print app.machines[machine_name].trace_settings
 
     print command
     print new_value
