@@ -1,6 +1,6 @@
 import numpy
 import json
-from polarweb.models.geometry import Layout
+from polarweb.models.layout import Layout
 
 
 def build_graph(imdata):

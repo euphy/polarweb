@@ -16,7 +16,7 @@ from gevent import Greenlet
 import gevent
 from polarweb.models.camera import Camera
 from polarweb.models.framebuffer import FrameBuffer
-from polarweb.models.geometry import Layout
+from polarweb.models.layout import Layout
 
 
 class VisualizationThread(Greenlet):

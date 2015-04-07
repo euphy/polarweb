@@ -27,7 +27,7 @@ class Machines(dict):
                            comm_port=spec['comm_port'],
                            baud_rate=spec['baud_rate'],
                            acquire_method=SETTINGS.ARTWORK_ACQUIRE_METHOD,
-                           layout_name='2x2',
+                           layout_name='3x3',
                            event_callback=outgoing_event_signaller,
                            viz=viz_thread)
             self[p.name] = p

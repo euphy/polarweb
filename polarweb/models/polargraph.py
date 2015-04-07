@@ -17,9 +17,9 @@ import serial
 from euclid import Vector2
 from polarweb.config import SETTINGS
 
-from polarweb.models import acquire, visualization
+from polarweb.models import acquire
 from polarweb.pathfinder import paths2svg
-from polarweb.models.geometry import Rectangle, Layout
+from polarweb.models.layout import Layout
 
 def update_machine_status(freq, p, viz):
     print "%s Starting update_machine_status at frequency %s" % (p.name, freq)
@@ -79,7 +79,7 @@ class Polargraph():
         self.serial = None
         self.queue = deque(['C17,400,400,10,END',
                             "C31,6000,END",
-                            "C32,6000,END"])
+                            "C32,3000,END"])
         self.received_log = deque()
         self.reading = False
 
@@ -280,7 +280,7 @@ class Polargraph():
 
                 # find a new panel for this artwork
                 self.layout.remove_current_panel()
-                new_panel = self.layout.use_random_panel()
+                new_panel = self.layout.use_next_panel()
                 if not new_panel:
                     # No new panels! Need to wait for a whole new layout.
                     self.wait_for_new_layout()
